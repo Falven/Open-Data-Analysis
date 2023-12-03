@@ -14,7 +14,7 @@ I'll be sharing the challenges I faced, the solutions I discovered, and the deta
 
 Additionally, I'll include case studies and real-world examples to illustrate the practical applications of these technologies. Expect insights into performance optimization, scalability issues, and best practices for maintaining a robust, efficient system.
 
-<img src="../assets/jupyter_logo.svg" alt="Jupyter Logo" width="150" height="225">
+![Jupyter Logo](../assets/jupyter_logo.png)
 
 [Next: The Journey](/docs/2_the_journey.md)  
 [Back: Table of Contents](../README.md)
