@@ -105,6 +105,5 @@ In the Jupyter Lab interface, you'll find a user directory with a notebook conta
 
 ![Jupyter Lab](../assets/jupyter_lab.png)
 
-[Next: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md)  
-[Previous: Key Investigation](./3_key_investigation.md)  
+[Previous: Key Investigation](./3_key_investigation.md) | [Next: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md)  
 [Table of Contents](../README.md)

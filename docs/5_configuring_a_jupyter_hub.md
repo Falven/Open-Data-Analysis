@@ -207,6 +207,5 @@ Assistant: Here is a plot with translucent circles of varying colors.
 
 ![Colorful Translucent Circles](../assets/generated_example.png)
 
-[Next: Conclusion](./6_conclusion.md)  
-[Previous: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md)  
+[Previous: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md) | [Next: Conclusion](./6_conclusion.md)  
 [Table of Contents](../README.md#table-of-contents)

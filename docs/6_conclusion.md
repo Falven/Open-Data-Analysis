@@ -32,6 +32,5 @@ A heartfelt thank you to the teams behind Jupyter, Azure, and OpenAI for their g
 
 The journey to reverse-engineer GPT-4's Advanced Data Analysis feature has been enlightening, presenting both challenges and learning opportunities. It stands as a testament to the incredible advancements in AI and data analysis technologies, and a reminder of the endless possibilities that lie ahead in this rapidly evolving landscape.
 
-[References](./7_references.md)  
-[Previous: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md)  
+[Previous: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md) | [Next: References](./7_references.md)  
 [Table of Contents](../README.md)

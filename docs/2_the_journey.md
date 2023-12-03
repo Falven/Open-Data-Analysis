@@ -88,6 +88,5 @@ Effectiveness Scale:
 
 This insight, paired with Jupyter Server's capabilities, led me to adopt it as the cornerstone solution for our Advanced Data Analysis feature.
 
-[Next: Key Investigation](./3_key_investigation.md)  
-[Previous: Introduction](./1_introduction.md)  
+[Previous: Introduction](./1_introduction.md) | [Next: Key Investigation](./3_key_investigation.md)  
 [Table of Contents](../README.md)

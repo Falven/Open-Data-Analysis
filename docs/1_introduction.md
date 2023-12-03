@@ -16,5 +16,4 @@ Additionally, I'll include case studies and real-world examples to illustrate th
 
 ![Jupyter Logo](../assets/jupyter_logo.png)
 
-[Next: The Journey](/docs/2_the_journey.md)  
-[Back: Table of Contents](../README.md)
+[Previous: Table of Contents](../README.md) | [Next: The Journey](/docs/2_the_journey.md)

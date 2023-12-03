@@ -41,6 +41,5 @@ In essence, a server like Jupyter but designed for multiple users?
 
 Enter JupyterHub: a multi-user server for Jupyter notebooks. It enables on-demand spawning of single-user Jupyter Notebook servers, perfectly aligning with our project's requirements.
 
-[Next: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md)  
-[Previous: The Journey](./2_the_journey.md)  
+[Previous: The Journey](./2_the_journey.md) | [Next: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md)  
 [Table of Contents](../README.md)
