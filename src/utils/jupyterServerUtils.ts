@@ -195,16 +195,16 @@ const processMessage = async (
   let result = '';
   let execution_count: ExecutionCount = null;
   if (isExecuteResultMsg(msg)) {
-    let textOutput = msg.content.data['text/plain'];
+    const textOutput = msg.content.data['text/plain'];
     result += typeof textOutput === 'object' ? JSON.stringify(textOutput) : textOutput;
     execution_count = msg.content.execution_count;
   } else if (isDisplayDataMsg(msg)) {
     const {
       content: { data },
     } = msg;
-    let imageOutput = data['image/png'];
+    const imageOutput = data['image/png'];
     saveImageData(typeof imageOutput === 'object' ? JSON.stringify(imageOutput) : imageOutput);
-    let textOutput = data['text/plain'] || data['text/markdown'];
+    const textOutput = data['text/plain'] || data['text/markdown'];
     // Add text output as part of the result to inform the Assistant that a graphic was generated.
     result += typeof textOutput === 'object' ? JSON.stringify(textOutput) : textOutput;
   } else if (isStreamMsg(msg)) {
@@ -230,7 +230,7 @@ export const executeCode = async (
     throw new Error('Kernel is not defined');
   }
 
-  const future = session.kernel.requestExecute({ code: input, silent: false });
+  const future = session.kernel.requestExecute({ code: input });
 
   let result = '';
   let executionCount: ExecutionCount = null;
