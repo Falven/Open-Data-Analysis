@@ -1,8 +1,10 @@
 # Configuring a JupyterHub
 
-**TL;DR:** This final page details the process of setting up a JupyterHub, including creating a configuration file, building the necessary Azure infrastructure, and deploying the Hub on Kubernetes. It also discusses running examples that interact with the JupyterHub API, demonstrating the project's full capabilities.
+**TL;DR:** This page details the process of setting up a JupyterHub, including creating a configuration file, building the necessary Azure infrastructure, and deploying the Hub on Kubernetes. It also discusses running examples that interact with the JupyterHub API, demonstrating the project's full capabilities.
 
 ## 5.1 Configuration
+
+Jupyter has [great documentation on configuring a Jupyter hub](https://z2jh.jupyter.org/en/latest/jupyterhub/customizing/user-environment.html), regardless I will outline a more summarized version of the steps I took in this document for your benefit.
 
 The first step to creating our hub is to create a configuration file that defines some of our customizations for the hub. See the `config.yaml` file in the root of the project for an example.
 
@@ -31,9 +33,9 @@ singleuser:
     tag: latest
 ```
 
-The first thing we need to configure is to define the name of a secret that we will create containing the necessary credentials to allow the hub to pull images from our Azure Container Registry. We simply need to define a name for it for now, will create this secret in the next section.
+The first thing we need to configure is to define the name of a secret that we will create containing the necessary credentials to allow the hub to pull images from our Azure Container Registry. We simply need to define a name for it for now. We will create this secret using this name in the next section.
 
-Secondly, we want to configure our external service or api that will interact with our hub. We can define a name for the service, whether or not it should be an administrative service, and an api token that we will use to authenticate with the service. For now, we can hardcode the token as the value for `api_token`, however, in a production environment I would recommend not to keep secrets in your config file and instead generate the token. At a bare minimum do not check in the config file to source control.
+Secondly, we want to configure our external service or api that will interact with our hub. We can define a name for the service, whether or not it should be an administrative service, and an api token that we will use to authenticate with the service. For now, we can hardcode the token as the value for `api_token`, however, in a production environment I would recommend not to keep secrets in your config file and instead generate the token. At a bare minimum I would recommend you do not check in the config file to source control.
 
 ```shell
 # Generate a random token for this example.
@@ -42,7 +44,9 @@ openssl rand -hex 32
 
 ## 5.2 Creating the infrastructure
 
-For the following sets of commands, pay attention to quoting of the parameter values, this is required in some shells like `zsh`.
+Please see [the JupyterHub documentation](https://z2jh.jupyter.org/en/latest/kubernetes/microsoft/step-zero-azure.html) for a more in-depth guide on deploying a K8s cluster to your cloud provider of choice. Again, I will outline the steps I took here as there were some extra steps around setting up the ACR correctly that are not outlined in the JupyterHub docs.
+
+For some of the following sets of commands, pay attention to quoting of the parameter values, this is required in some shells like `zsh`.
 
 ```shell
 # Login to Azure
@@ -189,15 +193,13 @@ docker inspect myacr.azurecr.io/interpreter:latest | grep Architecture
 kubectl --namespace my-aks-name get service proxy-public
 ```
 
-Please see [the JupyterHub documentation](https://z2jh.jupyter.org/en/latest/kubernetes/microsoft/step-zero-azure.html) for a more in-depth guide on deploying a K8s cluster to your cloud provider of choice.
-
 ## 5.4 Running the hub example
 
-Similar to running the server example, running the hub example requires setting the appropriate environment variables. Create a `.env` file in the root of the project with the relevant values. See the `example.env` file for an example.
+Similar to running the Jupyter Server example, running the JupyterHub example requires setting the appropriate environment variables. Create a `.env` file in the root of the project with the relevant values. See the `example.env` file for an example.
 
 To run the example, you can use the `launch.json` configurations by pressing F5 or play in VSCode. Or you can simply run the relevant package script: `pnpm run start:hub`.
 
-You should now be able to interact with the assistant. The assistant will be aware of a langchain `Tool` that interacts with the [JupyterHub API](https://jupyterhub.readthedocs.io/en/stable/reference/rest-api.html#/) directly to start a single-user server session, execute code on the Jupyter Server and save that along with results to a notebook. The code has been annotated for clarity and understanding.
+You should now be able to interact with the assistant. The assistant will be aware of a langchain `Tool` that interacts with the [JupyterHub API](https://jupyterhub.readthedocs.io/en/stable/reference/rest-api.html#/) directly to start a single-user server session, execute code on the Jupyter Server and save that along with results to a notebook.
 
 ```shell
 You: Execute some code that creates a plot with translucent circles of varying colors.
@@ -206,6 +208,8 @@ Assistant: Here is a plot with translucent circles of varying colors.
 ```
 
 ![Colorful Translucent Circles](../assets/generated_example.png)
+
+At this point, again, I recommend you refer to the annotated code in `src/hub_tool_example.ts`, `src/tools/HubCodeInterpreter.ts` and `src/utils/jupyterHubUtils.ts` to understand more of the details.
 
 [Previous: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md) | [Next: Conclusion](./6_conclusion.md)  
 [Table of Contents](../README.md#table-of-contents)

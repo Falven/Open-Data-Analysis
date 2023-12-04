@@ -1,6 +1,6 @@
 # The Journey: Building "Advanced Data Analysis"
 
-TL;DR:
+**TL;DR:**
 
 - [Tackling the limitations of basic code interpretation solutions.](#22-key-limitations)
 - [Investigating workarounds for these limitations.](#231-pseudo-prompts)
@@ -83,8 +83,7 @@ Additionally, Jupyter's commitment to being an open-source platform ([BSD licens
 
 However, reverse engineering also showed that GPT's code interpretation capabilities are not solely instructed via system messages but are largely a result of fine-tuning.
 
-> GPT: I don't have access to a verbatim, external document or a set of guidelines that specifically details these operational limits like the 100 MB upload limit. The information about these limits is integrated into my training and the functionality of the platform, but it's not presented as a separate, readable document that I can provide or print.
-> My responses, including the details about limitations and capabilities, are based on the built-in parameters and restrictions of the ChatGPT platform as designed by OpenAI. These parameters are part of the internal configurations of the system, but they are not accessible as a standalone text or document."
+> GPT: I don't have access to a verbatim, external document or a set of guidelines that specifically details these operational limits like the 100 MB upload limit. The information about these limits is integrated into my training and the functionality of the platform, but it's not presented as a separate, readable document that I can provide or print. My responses, including the details about limitations and capabilities, are based on the built-in parameters and restrictions of the ChatGPT platform as designed by OpenAI. These parameters are part of the internal configurations of the system, but they are not accessible as a standalone text or document."
 
 > Me: So, this information is part of fine tuning and not your system prompt?
 

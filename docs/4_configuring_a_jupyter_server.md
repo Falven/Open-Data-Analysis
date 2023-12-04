@@ -1,6 +1,6 @@
 # Configuring a Jupyter Server
 
-TL;DR: This page provides a step-by-step guide on setting up a Jupyter Server, including creating a Dockerfile with necessary libraries, building a Docker container for different architectures, and running and testing the server locally. It also covers the integration of LangChain JS and Azure OpenAI to generate and execute code.
+**TL;DR:** This page provides a step-by-step guide on setting up a Jupyter Server, including creating a Dockerfile with necessary libraries, building a Docker container for different architectures, and running and testing the server locally. It also covers the integration of LangChain JS and Azure OpenAI to generate and execute code.
 
 ## 4.1 Selecting a Jupyter Server image
 
@@ -109,7 +109,7 @@ Leveraging [`@jupterlab/services`](https://github.com/jupyterlab/jupyterlab) or 
 
 Additionally, as you may recall from the system prompt, OpenAI's Advanced Data Analysis feature also uses a `Tool` for interacting with its stateful Jupyter notebook environment.
 
-At this point I would suggest that you explore the source code in `src/server_too_example.ts` and `src/utils/jupyterServerUtils.ts` to familiarize yourself with some of the basic concepts. I have annotated the code with comments for clarity.
+At this point I would suggest that you explore the source code in `src/server_too_example.ts`, `src/tools/ServerCodeInterpreter.ts` and `src/utils/jupyterServerUtils.ts` to familiarize yourself with some of the concepts. I have annotated the code with comments for clarity.
 
 [Previous: Key Investigation](./3_key_investigation.md) | [Next: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md)  
 [Table of Contents](../README.md)

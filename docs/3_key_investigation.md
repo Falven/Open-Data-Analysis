@@ -1,6 +1,6 @@
 # Key Investigation
 
-TL;DR: This page discusses how Jupyter Server provides solutions to earlier limitations, enabling stateful execution, better file handling, and error management. It also addresses scalability and orchestration challenges, ultimately leading to the adoption of JupyterHub, which offers a multi-user server environment ideal for this project's needs.
+**TL;DR:** This page discusses how Jupyter Server provides solutions to earlier limitations, enabling stateful execution, better file handling, and error management. It also addresses scalability and orchestration challenges, ultimately leading to the adoption of JupyterHub, which offers a multi-user server environment ideal for this project's needs.
 
 ## 3.1 Solution 2 - Jupyter Server:
 
