@@ -1,16 +1,16 @@
 # Conclusion
 
-In this article, we analyzed and managed to uncover some of the complexities behind OpenAI's Advanced Data Analysis feature. We delved into the intricacies of code interpretation, statefulness, and the challenges of executing and managing code in a secure and efficient manner.
+In this article, we analyzed and managed to uncover some of the complexities behind OpenAI's Advanced Data Analysis feature. We created our own Advanced Data analysis solution and we delved into the intricacies of code interpretation, statefulness, and the challenges of executing and managing code in a secure, scalable and efficient manner.
 
 ## 6.1 Key Takeaways
 
-1. **Reverse Engineering GPT-4's Advanced Data Analysis**: We explored the underlying mechanisms that enable GPT-4 to interpret and execute code, emphasizing the importance of understanding large language models and their interaction with external tools.
+1. **Reverse Engineering GPT-4's Advanced Data Analysis**: We explored the underlying mechanisms that enable GPT-4 to interpret and execute code, emphasizing the importance of understanding large language models and how they interact with external tools.
 
 2. **Jupyter Server and Hub Integration**: The integration of Jupyter Server and JupyterHub emerged as a robust solution, providing a scalable and secure environment for executing code. This approach effectively addressed issues related to statefulness, security, and user environment isolation.
 
 3. **Practical Implementations**: By configuring a Jupyter Server and constructing a Docker container, we demonstrated a practical implementation of these concepts. The step-by-step guide provided insights into setting up and testing such an environment, paving the way for similar applications.
 
-4. **Architectural Considerations and Challenges**: We tackled architectural considerations, discussing scalability, security, and orchestration. Solutions like serverless architectures on Azure and Kubernetes clusters were explored to address these challenges.
+4. **Architectural Considerations and Challenges**: We tackled architectural considerations, discussing scalability, security, and orchestration. Solutions like serverless architectures on Azure and Kubernetes clusters were explored as potential solutions to address these challenges.
 
 ## 6.2 Future Directions
 
