@@ -11,7 +11,7 @@
 The basic flow for Code Interpretation is as follows:
 1. User Request: You request the assistant to develop or run code to achieve a specific task.
 2. Code Development and Integration: The assistant drafts the necessary code. If the task involves complex or external computations, the assistant, integrated with a framework like LangChain, invokes a specific, appropriate, Tool, passing the code through the tool's interface (e.g., the _call method in the LangChain implementation) for execution.
-3. Code Execution: The designated tool executes the code. This process might involve interactions with various backend systems, APIs, or computational resources, depending on the nature of the task and the capabilities of the tool. At this point, the Assistant may also go back to step 1 or 2 to refine the code or perform additional actions.
+3. Code Execution: The designated tool executes the code. This process might involve interactions with various backend systems, APIs, or computational resources, depending on the nature of the task and the capabilities of the tool. At this point, the Assistant may also go back to step 2 to refine the code or perform additional actions.
 4. Result Analysis and Response: Once the tool returns the output, the assistant interprets the results. This step often involves a combination of automated analysis and the assistant's built-in capabilities to understand and contextualize the output.
 5. User Feedback: The assistant communicates the outcome back to you. This might include the direct results of the code execution, additional insights, explanations, or recommendations for further actions based on the results.
 
