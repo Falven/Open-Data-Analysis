@@ -4,18 +4,16 @@ TL;DR: This page discusses how Jupyter Server provides solutions to earlier limi
 
 ## 3.1 Solution 2 - Jupyter Server:
 
-My exploration into Jupyter Server's functionalities revealed it as a solution for most of the core limitations discussed in [2.2 Key Limitations:](./2_the_journey.md#22-key-limitations).
+An exploration into Jupyter Server's functionalities reveals it as a great solution for most of the core limitations we discussed in [2.2 Key Limitations:](./2_the_journey.md#22-key-limitations):
 
 - **Stateful Execution**: The Python Kernel in Jupyter allows stateful code execution, enabling context retention across executions.
-- **Plotting**: Jupyter Server sends specific client messages when plots are rendered, facilitating plot saving or display.
-- **User Input**: It sends distinct messages for handling user input requests.
-- **Crashing**: When errors occur, Jupyter Server communicates these via specific messages for appropriate handling.
-- **Generated Files**: It streamlines the process of uploading or accessing generated files.
+- **Plotting**: Jupyter Server sends specific client messages when plots are rendered, facilitating plot saving or displaying.
+- **User Input**: Jupyter server sends distinct messages for handling user input requests.
+- **Crashing**: When errors occur, Jupyter Server communicates these via specific messages for appropriate handling and handles the kernel gracefully.
+- **Generated Files**: It streamlines the process of uploading or accessing generated files to the server.
 - **Error Communication**: Enhanced the assistant's problem-solving ability by [communicating code errors](https://js.langchain.com/docs/modules/agents/tools/how_to/dynamic), allowing it to attempt to correct its mistakes.
 
-Jupyter Server addresses most of the limitations related to single-server setup.
-
-However, challenges remain regarding scalability and user environment management. Custom solutions for these would not be straightforward.
+As you can see, Jupyter Server addresses most of the limitations related to a single-server setup. However, challenges remain regarding scalability and user environment management. Custom solutions for these would not be straightforward.
 
 ## 3.2 Key Limitations with Solution 2:
 
@@ -40,7 +38,7 @@ Assembling these components, a question arises: "Wouldn't it be ideal to have a 
 
 In essence, a server like Jupyter but designed for multiple users?
 
-Enter JupyterHub: a multi-user server for Jupyter notebooks. It enables on-demand spawning of single-user Jupyter Notebook servers, perfectly aligning with our project's requirements.
+Enter JupyterHub: a multi-user server for Jupyter notebooks. It enables on-demand spawning of single-user Jupyter Notebook servers, perfectly aligning with our project's requirements again.
 
 [Previous: The Journey](./2_the_journey.md) | [Next: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md)  
 [Table of Contents](../README.md)
