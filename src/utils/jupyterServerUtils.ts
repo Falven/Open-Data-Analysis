@@ -1,5 +1,4 @@
-import { writeFileSync } from 'node:fs';
-import { posix, join } from 'node:path';
+import { posix } from 'node:path';
 import {
   ServerConnection,
   KernelManager,
@@ -17,7 +16,7 @@ import {
   isErrorMsg,
 } from '@jupyterlab/services/lib/kernel/messages';
 import { v4 as uuidv4 } from 'uuid';
-import { getDirname, getRequiredEnvVar } from './envUtils';
+import { getRequiredEnvVar } from './envUtils';
 import { Managers } from './jupyterServerTypes';
 
 const serverUrl = getRequiredEnvVar('JUPYTER_URL');
@@ -168,17 +167,6 @@ export const getOrCreatePythonSession = async (
 };
 
 /**
- * Saves an image to the images directory.
- * @param base64ImageData The base64 encoded image data.
- */
-const saveImageData = (base64ImageData: string): void => {
-  const imageData = Buffer.from(base64ImageData, 'base64');
-  const imageName = `${uuidv4()}.png`;
-  const imagePath = join(getDirname(), '..', '..', 'images', imageName);
-  writeFileSync(imagePath, imageData);
-};
-
-/**
  * Processes a message from the Jupyter kernel and returns a list of outputs and the final result.
  * @param {IIOPubMessage<IOPubMessageType>} msg The message from the Jupyter kernel.
  * @param {IOutput[]} outputs The list of outputs.
@@ -199,14 +187,8 @@ const processMessage = async (
     result += typeof textOutput === 'object' ? JSON.stringify(textOutput) : textOutput;
     execution_count = msg.content.execution_count;
   } else if (isDisplayDataMsg(msg)) {
-    const {
-      content: { data },
-    } = msg;
-    const imageOutput = data['image/png'];
-    saveImageData(typeof imageOutput === 'object' ? JSON.stringify(imageOutput) : imageOutput);
-    const textOutput = data['text/plain'] || data['text/markdown'];
-    // Add text output as part of the result to inform the Assistant that a graphic was generated.
-    result += typeof textOutput === 'object' ? JSON.stringify(textOutput) : textOutput;
+    // Add text output as part of the result to inform the Assistant that an image was generated.
+    result += 'Image generated';
   } else if (isStreamMsg(msg)) {
     result += msg.content.text;
   } else if (isErrorMsg(msg)) {
