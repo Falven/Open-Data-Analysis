@@ -88,7 +88,7 @@ NSG_NAME=$(
     --query name -o tsv
 )
 
-# Add our IP to the Network Security group to allow us to access the hub.
+# Add our IP to the Network Security group to allow us to access our JupyterHub instance.
 az network nsg rule create --resource-group my-rg-name \
    --nsg-name vnet-dev-eastus-001-snet-dev-eastus-001-nsg-eastus \
    --name "AllowMyIPHttpInbound" \
