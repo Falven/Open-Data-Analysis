@@ -2,6 +2,8 @@
 
 Reverse engineering OpenAI's Advanced Data Analysis feature, formerly Code Interpreter. The steps, learnings and mistakes along the way.
 
+![Open Advanced Data Analysis Icon](assets/open_advanced_data_analysis_icon.png)
+
 ## Table of Contents
 
 1. [Introduction](docs/1_introduction.md)
