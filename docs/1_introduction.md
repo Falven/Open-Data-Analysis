@@ -1,14 +1,13 @@
 ## 1. Introduction
 
-Welcome to a deep dive into reverse engineering OpenAI's Advanced Data Analysis feature. In this article, I'll guide you through the intricate process of integrating Jupyter Server and JupyterHub with large language models like GPT. This exploration covers the full spectrum - from setting up the underlying infrastructure to fine-tuning application layers, with a special emphasis on the optimal configuration for GPT models.
-
-Our journey will uncover the Advanced Data Analysis capabilities of these models, presenting not only insights but also practical guidance across three key areas: infrastructure, application, and tool development. By the end, you'll have a robust understanding of how to leverage these tools effectively for advanced data analysis tasks.
+This documentation is a deep dive into creating your own robust Advanced Data Analysis feature. We will reverse engineer aspects of OpenAI's Advanced Data Analysis feature to gain insights into developing our own. I'll guide you through the intricate process of integrating Jupyter Server and JupyterHub with large language models like GPT. This exploration covers the full spectrum - from setting up the underlying infrastructure deploying services to writing the application layers that interact with our services, with a special emphasis on the optimal configuration for GPT models.
 
 Here's what you can expect:
 
-1. **In-Depth Infrastructure Insights:** Understand the necessary hardware and software environments to maximize the potential of large language models.
-2. **Application Layer Exploration:** Dive into the code, exploring how to interface Jupyter environments with GPT models for seamless integration.
-3. **Tool Development Strategies:** Learn about building and refining tools that enhance the functionality of these models, including visualization and automation techniques.
+1. **In-Depth infrastructure insights:** Understand the necessary services and configurations to enable code interpretation for LLMs.
+2. **Understand orchestration:** Learn how to deploy and manage JupyterHub and Jupyter Server instances to maximize the scalability of your solution.
+3. **Tool development strategies:** Dive into the code, exploring how to seamlessly integrate Jupyter environments with GPT models via `Tools` to unlock the development potential of the LLM.
+4. **Getting the most out of GPT:** Learn about why some strategies work better than others. Gain insights into how the OpenAI feature works and use it to enhance the functionality of your models, including visualization techniques.
 
 I'll be sharing the challenges I faced, the solutions I discovered, and the detailed steps I undertook throughout this journey. Whether you're a data scientist, a software engineer, or an enthusiast in the field, this guide aims to provide valuable knowledge and hands-on experience.
 
