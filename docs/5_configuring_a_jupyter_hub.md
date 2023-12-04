@@ -44,7 +44,7 @@ openssl rand -hex 32
 
 ## 5.2 Creating the infrastructure
 
-Please see [the JupyterHub documentation](https://z2jh.jupyter.org/en/latest/kubernetes/microsoft/step-zero-azure.html) for a more in-depth guide on deploying a K8s cluster to your cloud provider of choice. Again, I will outline the steps I took here as there were some extra steps around setting up the ACR correctly that are not outlined in the JupyterHub docs.
+Please see [the JupyterHub documentation](https://z2jh.jupyter.org/en/latest/kubernetes/microsoft/step-zero-azure.html) for a more in-depth guide on deploying a K8s cluster to your cloud provider of choice. Again, I will outline the steps I took here as there were some extra steps around setting up the ACR correctly and remembering to add your IP to the NSG that are not outlined in the JupyterHub docs.
 
 For some of the following sets of commands, pay attention to quoting of the parameter values, this is required in some shells like `zsh`.
 
@@ -74,6 +74,30 @@ az network vnet create \
    --address-prefixes 10.0.0.0/8 \
    --subnet-name my-subnet-name \
    --subnet-prefix 10.240.0.0/16
+
+# Store our NSG name in a variable for later use.
+NSG_NAME=$(
+  az resource show \
+    --ids "$(
+      az network vnet subnet show \
+        --resource-group my-rg-name \
+        --vnet-name my-vnet-name \
+        --name my-subnet-name \
+        --query "networkSecurityGroup.id" -o tsv
+    )" \
+    --query name -o tsv
+)
+
+# Add our IP to the Network Security group to allow us to access the hub.
+az network nsg rule create --resource-group my-rg-name \
+   --nsg-name vnet-dev-eastus-001-snet-dev-eastus-001-nsg-eastus \
+   --name "AllowMyIPHttpInbound" \
+   --priority 100 \
+   --source-address-prefixes "$(curl ifconfig.me)/32" \
+   --destination-port-ranges 80 \
+   --access Allow \
+   --protocol TCP \
+   --description "Allow my IP"
 
 # Store our VNET ID in a variable for later use.
 VNET_ID=$(az network vnet show \
