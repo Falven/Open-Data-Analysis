@@ -46,7 +46,7 @@ export class CodeInterpreter extends Tool {
   constructor({ userId, conversationId }: InterpreterOptions) {
     super();
 
-    this.name = 'CodeInterpreter';
+    this.name = 'python';
     // GPT4 Advanced Data Analysis prompt
     this.description =
       "When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.";
