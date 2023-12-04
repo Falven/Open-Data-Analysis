@@ -5,7 +5,7 @@ import {
   SessionManager,
   ContentsManager,
 } from '@jupyterlab/services';
-import { ExecutionCount, INotebookContent, IOutput } from '@jupyterlab/nbformat';
+import { ExecutionCount, IDisplayData, INotebookContent, IOutput } from '@jupyterlab/nbformat';
 import type { Contents, Session } from '@jupyterlab/services';
 import {
   isExecuteResultMsg,
@@ -251,3 +251,9 @@ export const addCellsToNotebook = (
     execution_count,
   });
 };
+
+/**
+ * Test whether an output is from display data.
+ */
+export const isDisplayData = (output: IOutput): output is IDisplayData =>
+  output.output_type === 'display_data';

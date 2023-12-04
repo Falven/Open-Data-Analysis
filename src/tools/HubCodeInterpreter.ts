@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { Tool } from 'langchain/tools';
 import { ContentsManager, SessionManager } from '@jupyterlab/services';
-import { IOutput, isDisplayData } from '@jupyterlab/nbformat';
+import { IOutput } from '@jupyterlab/nbformat';
 import {
   addCellsToNotebook,
   executeCode,
@@ -11,6 +11,7 @@ import {
   initializeManagers,
   getOrCreateNotebook,
   createServerSettingsForUser,
+  isDisplayData,
 } from '../utils/jupyterServerUtils';
 import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils';
 import { getDirname } from '../utils/envUtils';

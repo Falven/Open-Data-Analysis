@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@jupyterlab/nbformat':
-    specifier: ^4.0.9
-    version: 4.0.9
+    specifier: 4.1.0-alpha.4
+    version: 4.1.0-alpha.4
   '@jupyterlab/services':
     specifier: ^7.0.9
     version: 7.0.9(react@18.2.0)
@@ -109,6 +109,12 @@ packages:
 
   /@jupyterlab/nbformat@4.0.9:
     resolution: {integrity: sha512-3uLgD8bK74Ng7ByL1qXXe2V+OktZ495PYvvmoj3c/FiihNLxnQ9ou7edUlOPYcQML5hu19oGX1AlJhSjGgvlzA==}
+    dependencies:
+      '@lumino/coreutils': 2.1.2
+    dev: false
+
+  /@jupyterlab/nbformat@4.1.0-alpha.4:
+    resolution: {integrity: sha512-pwTJXjLpRt7fR9JsCacrXxPcurIx5AAbo5L2Nbz1Xs86aUVZsmCvJGsvxe9+QBBrxn/Nirm5jF4xH7Qm6105sQ==}
     dependencies:
       '@lumino/coreutils': 2.1.2
     dev: false

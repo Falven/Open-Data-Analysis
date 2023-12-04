@@ -12,7 +12,7 @@
     "start:server": "pnpm dotenv ts-node --project tsconfig.json ./src/server_tool_example.ts"
   },
   "dependencies": {
-    "@jupyterlab/nbformat": "^4.0.9",
+    "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
     "axios": "^1.6.2",
     "eventsource": "^2.0.2",
