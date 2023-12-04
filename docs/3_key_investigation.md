@@ -11,6 +11,7 @@ My exploration into Jupyter Server's functionalities revealed it as a solution f
 - **User Input**: It sends distinct messages for handling user input requests.
 - **Crashing**: When errors occur, Jupyter Server communicates these via specific messages for appropriate handling.
 - **Generated Files**: It streamlines the process of uploading or accessing generated files.
+- **Error Communication**: Enhanced the assistant's problem-solving ability by [communicating code errors](https://js.langchain.com/docs/modules/agents/tools/how_to/dynamic), allowing it to attempt to correct its mistakes.
 
 Jupyter Server addresses most of the limitations related to single-server setup.
 

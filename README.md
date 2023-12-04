@@ -7,7 +7,7 @@ Reverse engineering OpenAI's Advanced Data Analysis feature, formerly Code Inter
 1. [Introduction](docs/1_introduction.md)
 2. [The Journey: Building "Advanced Data Analysis"](docs/2_the_journey.md)
    - [2.1 The Quick and Dirty](docs/2_the_journey.md#21-the-quick-and-dirty)
-   - [2.2 Key Limitations](docs/2_the_journey.md#22-key-limitations)
+   - [2.2 Core Limitations](docs/2_the_journey.md#22-core-limitations)
    - [2.3 Solution 1 - Prompt Engineering](docs/2_the_journey.md#23-solution-1---prompt-engineering)
      - [2.3.1 Pseudo-Prompts](docs/2_the_journey.md#231-pseudo-prompts)
    - [2.4 The Problems with Prompt Engineering](docs/2_the_journey.md#24-the-problems-with-prompt-engineering)
