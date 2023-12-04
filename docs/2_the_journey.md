@@ -98,8 +98,8 @@ However, reverse engineering also showed that GPT's code interpretation capabili
 
 This means that we cannot simply undo this training/tuning to make it use tools in our preferred manner. Instead, it would be more effective to change our tools to work in the manner GPT expects, and utilize a combination of prompt engineering and fine-tuning sparingly to simply help guide its use in areas that do not conflict with its inherent capabilities.
 
-Effectiveness Scale:  
-**Prompting < Fine-Tuning < Native Prompting < Native Fine-Tuning**
+**Effectiveness Scale:**  
+`Prompting < Fine-Tuning < Native Prompting < Native Fine-Tuning`
 
 This insight, paired with Jupyter Server's capabilities, led me to adopt it as the cornerstone solution for our Advanced Data Analysis feature.
 
