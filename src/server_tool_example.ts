@@ -46,10 +46,11 @@ const memory = new BufferMemory({
  * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
  */
 const prompt = ChatPromptTemplate.fromMessages([
-  ['ai', 'You are a helpful assistant'],
+  ['ai', 'You are a helpful AI assistant.'],
   ['human', '{input}'],
   new MessagesPlaceholder('agent_scratchpad'),
 ]);
+
 /**
  * Bind the tools to the LLM.
  * Here we're using the `formatToOpenAIFunction` util function
@@ -58,6 +59,7 @@ const prompt = ChatPromptTemplate.fromMessages([
 const modelWithFunctions = model.bind({
   functions: [...tools.map((tool) => formatToOpenAIFunction(tool))],
 });
+
 /**
  * Define a new agent steps parser.
  */
@@ -70,6 +72,7 @@ const formatAgentSteps = (steps: AgentStep[]): BaseMessage[] =>
       return [new AIMessage(action.log)];
     }
   });
+
 /**
  * Construct the runnable agent.
  *
@@ -89,6 +92,7 @@ const runnableAgent = RunnableSequence.from([
   modelWithFunctions,
   new OpenAIFunctionsAgentOutputParser(),
 ]);
+
 /** Pass the runnable along with the tools to create the Agent Executor */
 const executor = AgentExecutor.fromAgentAndTools({
   agent: runnableAgent,
