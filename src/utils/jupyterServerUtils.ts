@@ -188,7 +188,7 @@ const processMessage = async (
     execution_count = msg.content.execution_count;
   } else if (isDisplayDataMsg(msg)) {
     // Add text output as part of the result to inform the Assistant that an image was generated.
-    result += 'Image generated';
+    result += 'An image has been generated and displayed to the user.';
   } else if (isStreamMsg(msg)) {
     result += msg.content.text;
   } else if (isErrorMsg(msg)) {
