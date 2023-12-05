@@ -8,20 +8,24 @@
 
 ## 2.1 The Quick and Dirty
 
-The basic flow for Code Interpretation is as follows:
-1. User Request: You request the assistant to develop or run code to achieve a specific task.
-2. Code Development and Integration: The assistant drafts the necessary code. If the task involves complex or external computations, the assistant, integrated with a framework like LangChain, invokes a specific, appropriate, Tool, passing the code through the tool's interface (e.g., the _call method in the LangChain implementation) for execution.
-3. Code Execution: The designated tool executes the code. This process might involve interactions with various backend systems, APIs, or computational resources, depending on the nature of the task and the capabilities of the tool. At this point, the Assistant may also go back to step 2 to refine the code or perform additional actions.
-4. Result Analysis and Response: Once the tool returns the output, the assistant interprets the results. This step often involves a combination of automated analysis and the assistant's built-in capabilities to understand and contextualize the output.
-5. User Feedback: The assistant communicates the outcome back to you. This might include the direct results of the code execution, additional insights, explanations, or recommendations for further actions based on the results.
+We first need a service running langchain or a comparable framework that gives us the capabilities of an [agent](https://js.langchain.com/docs/modules/agents/).
 
-My initial setup was akin to [this implementation](https://github.com/danny-avila/LibreChat/pull/837/files#diff-d89174583267e34034f69f77a62ad1a655e15d88318f25d427f16c04b72da73e), with a twist. It used a containerized server with websockets for code execution and result retrieval, along with file operations handling and a hierarchical file system for user-specific data that avoided the need for a Database. Despite its pros and sophistication, I encountered several core limitations.
+> Some applications require a flexible chain of calls to LLMs and other tools based on user input. The Agent interface provides the flexibility for such applications. An agent has access to a suite of tools, and determines which ones to use depending on the user input. Agents can use multiple tools, and use the output of one tool as the input to the next.
+
+Once we have an agent, we can equip it with a tool to interpret code. The basic flow for Code Interpretation is as follows:
+1. User Request: You request the Agent to develop or run code to achieve a specific task.
+2. Code Development and Integration: The agent drafts the necessary code. If the task involves complex or external computations, the agent, integrated with a framework like LangChain, invokes a specific, appropriate, Tool, passing the code through the tool's interface (e.g., the _call method in the LangChain implementation) for execution.
+3. Code Execution: The designated tool executes the code. This process might involve interactions with various backend systems, APIs, or computational resources, depending on the nature of the task and the capabilities of the tool. At this point, the agent may also go back to step 2 to refine the code or perform additional actions.
+4. Result Analysis and Response: Once the tool returns the output, the agent interprets the results. This step often involves a combination of automated analysis and the agent's built-in capabilities to understand and contextualize the output.
+5. User Feedback: The agent communicates the outcome back to you. This might include the direct results of the code execution, additional insights, explanations, or recommendations for further actions based on the results.
+
+Next, we need a server to execute the agent's code: an interpreter. My initial implementation was similar to [this one](https://github.com/danny-avila/LibreChat/pull/837/files#diff-d89174583267e34034f69f77a62ad1a655e15d88318f25d427f16c04b72da73e), but with a twist. It used a containerized server with websockets for code execution and result retrieval, along with file operations handling and a hierarchical file system for user-specific data that avoided the need for a database. Despite its pros and sophistication, I encountered several core limitations.
 
 ## 2.2 Core Limitations:
 
-- **Statelessness:** The server's inability to maintain context across multiple assistant requests hindered code execution continuity.
+- **Statelessness:** The server's inability to maintain context across multiple agent requests hindered code execution continuity.
 
-- **Libraries:** The assistant attempts to use libraries that are not pre-installed on the server.
+- **Libraries:** The agent attempts to use libraries that are not pre-installed on the server.
 
 - **Plotting Issues:** The use of `Plot.show()` is ineffective due to its inherent behavior of spawning processes on the server.
 
@@ -29,7 +33,7 @@ My initial setup was akin to [this implementation](https://github.com/danny-avil
 
 - **Stability Concerns:** Risks of service outages due to user code causing infinite loops, blocks, or crashes on a shared instance.
 
-- **File Management:** Missing or inaccurate handling of links to generated files returned from the server in the assistant's responses.
+- **File Management:** Missing or inaccurate handling of links to generated files returned from the server in the agent's responses.
 
 - **Error Communication:** Initially, failure to react to execution errors and reduced problem-solving ability.
 
@@ -39,9 +43,9 @@ My initial setup was akin to [this implementation](https://github.com/danny-avil
 
 ## 2.3 Solution 1 - Prompt Engineering:
 
-To mitigate these limitations, I turned to prompt engineering, inspired by projects like [Open Interpreter](https://github.com/KillianLucas/open-interpreter). This technique involved crafting detailed prompts to extend the assistant's operational context and circumvent some challenges. A typical prompt strategy was to incorporate continuous recaps to enhance the model's effective memory.
+To mitigate these limitations, I turned to prompt engineering, inspired by projects like [Open Interpreter](https://github.com/KillianLucas/open-interpreter). This technique involved crafting detailed prompts to extend the agent's operational context and circumvent some challenges. A typical prompt strategy was to incorporate continuous recaps to enhance the model's effective memory.
 
-Specifically, strategies included instructions for the assistant to:
+Specifically, strategies included instructions for the agent to:
 
 ### 2.3.1 Pseudo-Prompts:
 
@@ -60,7 +64,7 @@ These adjustments led to noticeable improvements. Nonetheless, while helpful, pr
 
 > Large language models have a fixed-size memory buffer known as a context window, typically around 2048 words or tokens. This limits the model's reference range to the most recent text, with older information being progressively replaced.
 
-Lengthy prompts in prompt engineering can inadvertently consume significant portions of this context window, leading to a loss of focus on the main task and increased inaccuracies or hallucinations. Coupled with long user requests, the inverse can happen, where the assistant loses context of its tool instructions.
+Lengthy prompts in prompt engineering can inadvertently consume significant portions of this context window, leading to a loss of focus on the main task and increased inaccuracies or hallucinations. Coupled with long user requests, the inverse can happen, where the agent loses context of its tool instructions.
 
 ## 2.5 The Reversal:
 

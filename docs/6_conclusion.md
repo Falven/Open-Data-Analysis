@@ -24,6 +24,45 @@ As technology continues to evolve, so will the methods and tools for advanced da
 
 4. **Continued Open Source Contribution**: The role of open-source communities in improving and maintaining these tools cannot be understated. Continued contribution and collaboration will drive innovation and accessibility in this field.
 
+1. Establish Baseline Behaviors
+First, understand the baseline behavior of both models in standard scenarios:
+
+Run Standard Code Snippets: Execute a set of predefined Python code snippets on both platforms. These snippets should cover a range of functionalities, from basic arithmetic to more complex tasks like data processing or visualization.
+Document Outputs: Record the outputs, error handling, response styles, and any peculiarities in how each model interacts with the Python tool.
+2. Test Edge Cases
+Edge cases often reveal differences in training and fine-tuning:
+
+Execute Complex or Unusual Code: Run code that is complex, unusual, or typically challenging for AI models to handle. This can include tasks that require nuanced understanding or generate unusual outputs.
+Observe Error Handling: Pay attention to how each model handles errors or unexpected inputs in the code. Differences in error handling can indicate variations in training or fine-tuning.
+3. Analyze Response Patterns
+Look for patterns in the responses:
+
+Compare Language and Terminology: Note any differences in the language, terminology, or explanations provided by each model.
+Response Time: Measure how long each model takes to execute the same code and provide a response.
+4. Evaluate Contextual Understanding
+Test how well each model understands the context:
+
+Multi-Step Code Execution: Try multi-step problems where the solution requires maintaining context over several code executions.
+Contextual Queries: After executing code, ask follow-up questions that require the model to reference the results or process of the previous execution.
+5. Check for Model-Specific Limitations or Features
+Each deployment might have unique constraints or features:
+
+Explore Model-Specific Documentation: Review any available documentation for model-specific limitations or features, especially regarding code execution.
+Test for Known Limitations: Specifically, test scenarios that push the boundaries of known limitations, like data access restrictions or computational limits.
+6. Review Update and Training Information
+If available, review any public information on the training and updates of each model:
+
+Model Release Notes: Look for any release notes or update logs from OpenAI and Azure regarding their GPT-4 models.
+Community Feedback: Check forums, articles, or user feedback that might shed light on observed differences.
+7. Continuous Monitoring
+Since models may receive updates:
+
+Repeat Tests Periodically: Re-run tests periodically to check for changes or improvements over time.
+8. Documentation and Reporting
+Finally, document your findings:
+
+Create a Comparative Report: Summarize the differences and similarities observed, providing examples and data to back up your observations.
+
 ## 6.3 Acknowledgments
 
 A heartfelt thank you to the teams behind Jupyter, Azure, and OpenAI for their groundbreaking work in this field. Their dedication to open-source development and innovation in technology has been instrumental in the progress of data analysis and AI.
