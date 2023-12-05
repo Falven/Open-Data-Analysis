@@ -35,8 +35,10 @@ const model = new ChatOpenAI({
 });
 
 const memory = new BufferMemory({
-  memoryKey: 'chat_history',
   returnMessages: true,
+  memoryKey: 'chat_history',
+  inputKey: 'input',
+  outputKey: 'output',
 });
 
 /**
@@ -95,6 +97,7 @@ const runnableAgent = RunnableSequence.from([
 
 /** Pass the runnable along with the tools to create the Agent Executor */
 const executor = AgentExecutor.fromAgentAndTools({
+  tags: ['openai-functions'],
   agent: runnableAgent,
   tools,
   memory,
