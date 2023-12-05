@@ -48,7 +48,7 @@ export class CodeInterpreter extends Tool {
     this.name = 'python';
     // GPT4 Advanced Data Analysis prompt
     this.description =
-      "When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.";
+      "When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to create links to images as they will not work.";
 
     // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
     this.userId = userId;
