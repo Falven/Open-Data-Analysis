@@ -17,6 +17,7 @@ const model = new ChatOpenAI({
   azureOpenAIApiInstanceName,
   azureOpenAIApiDeploymentName,
   azureOpenAIApiVersion,
+  verbose: true,
 });
 
 const tools = [new CodeInterpreter({ userId: 'user', conversationId: uuidv4() })];
@@ -32,6 +33,7 @@ const executor = await initializeAgentExecutorWithOptions(tools, model, {
   agentArgs: {
     prefix: 'You are a helpful AI assistant.',
   },
+  verbose: true,
 });
 
 const chatLoop = async () => {
