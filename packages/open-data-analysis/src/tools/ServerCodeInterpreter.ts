@@ -12,8 +12,8 @@ import {
   getOrCreateNotebook,
   createServerSettings,
   isDisplayData,
-} from '../utils/jupyterServerUtils';
-import { getDirname } from '../utils/envUtils';
+} from '../utils/jupyterServerUtils.js';
+import { getDirname } from '../utils/envUtils.js';
 
 /**
  * The particular user and conversation in which the interpreter is being used.

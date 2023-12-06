@@ -1,7 +1,7 @@
 import axios from 'axios';
 import EventSource from 'eventsource';
-import { getRequiredEnvVar } from './envUtils';
-import { JupyterHubUser, ProgressEvent } from './jupyterHubTypes';
+import { getRequiredEnvVar } from './envUtils.js';
+import { JupyterHubUser, ProgressEvent } from './jupyterHubTypes.js';
 
 const jupyterHubUrl = getRequiredEnvVar('JUPYTER_URL');
 const jupyterHubToken = getRequiredEnvVar('JUPYTER_TOKEN');

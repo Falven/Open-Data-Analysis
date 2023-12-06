@@ -9,7 +9,7 @@ import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output
 import { BufferMemory } from 'langchain/memory';
 import { v4 as uuidv4 } from 'uuid';
 import { getRequiredEnvVar } from '../../open-data-analysis/src/utils/envUtils';
-import { CodeInterpreter } from '../../open-data-analysis/src/tools/HubCodeInterpreter';
+import { CodeInterpreter } from 'open-data-analysis/src/tools/HubCodeInterpreter/HubCodeInterpreter';
 
 const azureOpenAIApiKey = getRequiredEnvVar('AZURE_OPENAI_API_KEY');
 const azureOpenAIApiInstanceName = getRequiredEnvVar('AZURE_OPENAI_API_INSTANCE_NAME');

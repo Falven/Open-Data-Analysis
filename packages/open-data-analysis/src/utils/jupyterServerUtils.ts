@@ -14,10 +14,10 @@ import {
   isDisplayDataMsg,
   isStreamMsg,
   isErrorMsg,
-} from '@jupyterlab/services/lib/kernel/messages';
+} from '@jupyterlab/services/lib/kernel/messages.js';
 import { v4 as uuidv4 } from 'uuid';
-import { getRequiredEnvVar } from './envUtils';
-import { Managers } from './jupyterServerTypes';
+import { getRequiredEnvVar } from './envUtils.js';
+import { Managers } from './jupyterServerTypes.js';
 
 const serverUrl = getRequiredEnvVar('JUPYTER_URL');
 const token = getRequiredEnvVar('JUPYTER_TOKEN');

@@ -8,8 +8,8 @@ import { formatToOpenAIFunction } from 'langchain/tools';
 import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { v4 as uuidv4 } from 'uuid';
-import { getRequiredEnvVar } from '../../open-data-analysis/src/utils/envUtils';
-import { CodeInterpreter } from '../../open-data-analysis/src/tools/ServerCodeInterpreter';
+import { getRequiredEnvVar } from 'open-data-analysis/utils';
+import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
 
 const azureOpenAIApiKey = getRequiredEnvVar('AZURE_OPENAI_API_KEY');
 const azureOpenAIApiInstanceName = getRequiredEnvVar('AZURE_OPENAI_API_INSTANCE_NAME');

@@ -5,11 +5,15 @@
   "keywords": [],
   "license": "ISC",
   "author": "",
-  "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "start:hub": "pnpm dotenv ts-node --project tsconfig.json ./src/hub_tool_example.ts",
-    "start:server": "pnpm dotenv ts-node --project tsconfig.json ./src/server_tool_example.ts",
+    "build": "pnpm ts-node --esm ../../scripts/esbuild.config.mts",
+    "build:dev": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev",
+    "watch": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev --watch",
+    "dev:server": "dotenv node dist/server_tool_example.js",
+    "start:server": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/server_tool_example.ts",
+    "start:hub": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/hub_tool_example.ts",
+    "start:playground": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/playground.ts"
   },
   "dependencies": {
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
@@ -17,6 +21,7 @@
     "axios": "^1.6.2",
     "eventsource": "^2.0.2",
     "langchain": "^0.0.199",
+    "open-data-analysis": "workspace:^",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -29,5 +34,8 @@
     "glob": "^10.3.10",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

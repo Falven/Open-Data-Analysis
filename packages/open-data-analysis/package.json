@@ -5,9 +5,9 @@
   "keywords": [],
   "license": "ISC",
   "author": "",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "build:esm": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib",
     "build:cjs": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib --cjs",
@@ -33,5 +33,24 @@
     "glob": "^10.3.10",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js"
+    },
+    "./tools/HubCodeInterpreter": {
+      "types": "./dist/tools/HubCodeInterpreter.d.ts",
+      "import": "./dist/tools/HubCodeInterpreter.js"
+    },
+    "./tools/ServerCodeInterpreter": {
+      "types": "./dist/tools/ServerCodeInterpreter.d.ts",
+      "import": "./dist/tools/ServerCodeInterpreter.js"
+    }
   }
 }

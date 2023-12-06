@@ -72,6 +72,9 @@ importers:
       langchain:
         specifier: ^0.0.199
         version: 0.0.199(axios@1.6.2)
+      open-data-analysis:
+        specifier: workspace:^
+        version: link:../open-data-analysis
       uuid:
         specifier: ^9.0.1
         version: 9.0.1

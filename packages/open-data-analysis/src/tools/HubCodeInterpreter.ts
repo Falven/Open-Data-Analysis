@@ -12,9 +12,9 @@ import {
   getOrCreateNotebook,
   createServerSettingsForUser,
   isDisplayData,
-} from '../utils/jupyterServerUtils';
-import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils';
-import { getDirname } from '../utils/envUtils';
+} from '../utils/jupyterServerUtils.js';
+import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils.js';
+import { getDirname } from '../utils/envUtils.js';
 
 /**
  * The particular user and conversation in which the interpreter is being used.

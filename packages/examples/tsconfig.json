@@ -1,6 +1,12 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "outDir": "../dist",
+    "rootDir": "./src",
     "allowSyntheticDefaultImports": true
   },
-  "extends": "../../tsconfig.json"
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }

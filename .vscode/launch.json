@@ -5,10 +5,22 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Playground",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "examples", "start:playground"],
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node",
+      "outputCapture": "std",
+      "console": "integratedTerminal"
+    },
+    {
       "name": "Run Jupyter Server Example",
       "request": "launch",
-      "runtimeArgs": ["start:server"],
+      "cwd": "${workspaceFolder}",
       "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "examples", "start:server"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std",
@@ -17,8 +29,9 @@
     {
       "name": "Run JupyterHub Example",
       "request": "launch",
-      "runtimeArgs": ["start:hub"],
+      "cwd": "${workspaceFolder}",
       "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "examples", "start:hub"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std",

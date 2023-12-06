@@ -16,10 +16,12 @@ const parseExternals = (args: string[]): string[] => {
 
 const esmOptions: Partial<BuildOptions> = {
   format: 'esm',
+  outExtension: { '.js': '.js' },
 };
 
 const cjsOptions: Partial<BuildOptions> = {
   format: 'cjs',
+  outExtension: { '.js': '.cjs' },
 };
 
 let serverProcess: ChildProcess | null = null;
@@ -59,24 +61,24 @@ const onEndPlugin: Plugin = {
 const plugins: Plugin[] = [dynamicNodeNativeModulePlugin];
 
 const appOptions: Partial<BuildOptions> = {
-  entryPoints: ['src/index.ts'],
-  outfile: 'dist/index.js',
-  bundle: true,
+  entryPoints: ['src/server_tool_example.ts', 'src/hub_tool_example.ts'],
+  outdir: 'dist/',
+  bundle: false,
   plugins,
   external: parseExternals(args),
-  banner: {
-    js: `import { createRequire as esbCreateRequire } from 'module';
-    import { fileURLToPath as esbFileURLToPath } from 'url';
-    import { dirname as esbDirname } from 'node:path';
-    const require = esbCreateRequire(import.meta.url);
-    const __filename = esbFileURLToPath(import.meta.url);
-    const __dirname = esbDirname(__filename);`,
-  },
+//   banner: {
+//     js: `import { createRequire as esbCreateRequire } from 'module';
+// import { fileURLToPath as esbFileURLToPath } from 'url';
+// import { dirname as esbDirname } from 'node:path';
+// const require = esbCreateRequire(import.meta.url);
+// const __filename = esbFileURLToPath(import.meta.url);
+// const __dirname = esbDirname(__filename);`,
+//   },
 };
 
 const libOptions: Partial<BuildOptions> = {
   entryPoints: await glob('src/**/*.ts'),
-  outdir: args.includes('--cjs') ? 'dist/cjs/' : 'dist/esm/',
+  outdir: 'dist/',
 };
 
 const devOptions: Partial<BuildOptions> = {

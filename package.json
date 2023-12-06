@@ -6,10 +6,13 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Falven/Open-Data-Analysis.git"
+  },
   "dependencies": {
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
@@ -28,5 +31,8 @@
     "glob": "^10.3.10",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }
