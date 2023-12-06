@@ -44,7 +44,12 @@ And that's it! We now have our own custom Jupyter Server image.
 If you are planning to eventually deploy a JupyterHub instance, consider your target platform. This guide demonstrates deployment to Azure Kubernetes Service, which required building the container for arm64. Because of that, I am using the docker buildx command to build the container for both amd64 and arm64.
 
 ```shell
-docker buildx build --platform linux/amd64,linux/arm64 -t myacr.azurecr.io/interpreter:latest -f Dockerfile .
+# Create a new builder instance
+docker buildx create --use --platform=linux/amd64 --name jupyter-server-builder
+# Verify the builder instance
+docker buildx inspect jupyter-server-builder --bootstrap
+# Build the container
+docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:latest --load -f ./interpreter/Dockerfile ./interpreter
 ```
 
 ## 4.4 Running and testing the container locally:

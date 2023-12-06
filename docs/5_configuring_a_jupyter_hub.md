@@ -204,7 +204,7 @@ kubectl create secret docker-registry cr-myacrsecret \
    --namespace my-aks-name
 
 # Ensure our pods are running.
-kubectl get pod --namespace
+kubectl get pod --namespace my-aks-name
 
 #If you see any pods in a CrashLoopBackOff state, for example, an image puller, check the logs for the pod.
 kubectl logs hook-image-puller-8gjqm -n my-aks-name -c image-pull-singleuser
