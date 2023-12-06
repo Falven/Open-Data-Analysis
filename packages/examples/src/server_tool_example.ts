@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline';
-import { AgentExecutor } from 'langchain/agents';
+import { AgentExecutor, OpenAIAgent } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
 import { AIMessage, AgentStep, BaseMessage, FunctionMessage } from 'langchain/schema';
@@ -8,8 +8,8 @@ import { formatToOpenAIFunction } from 'langchain/tools';
 import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { v4 as uuidv4 } from 'uuid';
-import { getRequiredEnvVar } from './utils/envUtils';
-import { CodeInterpreter } from './tools/HubCodeInterpreter';
+import { getRequiredEnvVar } from '../../open-data-analysis/src/utils/envUtils';
+import { CodeInterpreter } from '../../open-data-analysis/src/tools/ServerCodeInterpreter';
 
 const azureOpenAIApiKey = getRequiredEnvVar('AZURE_OPENAI_API_KEY');
 const azureOpenAIApiInstanceName = getRequiredEnvVar('AZURE_OPENAI_API_INSTANCE_NAME');
@@ -34,11 +34,18 @@ const model = new ChatOpenAI({
   verbose: true,
 });
 
+// const memory = new BufferMemory({
+//   returnMessages: true,
+//   memoryKey: 'chat_history',
+//   inputKey: 'input',
+//   outputKey: 'output',
+// });
+
 const memory = new BufferMemory({
-  returnMessages: true,
-  memoryKey: 'chat_history',
+  memoryKey: 'history',
   inputKey: 'input',
   outputKey: 'output',
+  returnMessages: true,
 });
 
 /**
@@ -48,10 +55,15 @@ const memory = new BufferMemory({
  * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
  */
 const prompt = ChatPromptTemplate.fromMessages([
-  ['ai', 'You are a helpful AI assistant.'],
+  ['ai', 'You are a helpful assistant.'],
+  new MessagesPlaceholder('chat_history'),
   ['human', '{input}'],
   new MessagesPlaceholder('agent_scratchpad'),
 ]);
+
+// const prompt = OpenAIAgent.createPrompt(tools, {
+//   prefix: 'You are a helpful AI assistant.',
+// });
 
 /**
  * Bind the tools to the LLM.
@@ -89,6 +101,10 @@ const runnableAgent = RunnableSequence.from([
   {
     input: (i: { input: string; steps: AgentStep[] }) => i.input,
     agent_scratchpad: (i: { input: string; steps: AgentStep[] }) => formatAgentSteps(i.steps),
+    chat_history: async (_: { input: string; steps: AgentStep[] }) => {
+      const { history } = await memory.loadMemoryVariables({});
+      return history;
+    },
   },
   prompt,
   modelWithFunctions,
@@ -100,7 +116,6 @@ const executor = AgentExecutor.fromAgentAndTools({
   tags: ['openai-functions'],
   agent: runnableAgent,
   tools,
-  memory,
 });
 
 const chatLoop = async () => {
@@ -118,13 +133,14 @@ const chatLoop = async () => {
 
   rl.on('SIGINT', exit);
 
-  rl.on('line', async (line) => {
+  rl.on('line', async (line: string) => {
     if (line.trim() === '.exit') {
       exit();
     } else {
       try {
         const result = await executor.invoke({ input: line });
         console.log(`Assistant: ${result.output}`);
+        await memory.saveContext({ input: line }, { output: result.output });
       } catch (error) {
         console.error(error);
       }
@@ -135,4 +151,4 @@ const chatLoop = async () => {
   rl.prompt();
 };
 
-await chatLoop();
+chatLoop();

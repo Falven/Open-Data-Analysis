@@ -1,15 +1,16 @@
 {
-  "name": "open-data-analysis",
+  "name": "examples",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
   "license": "ISC",
   "author": "",
+  "main": "dist/index.js",
   "type": "module",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
-  "scripts": {},
+  "scripts": {
+    "start:hub": "pnpm dotenv ts-node --project tsconfig.json ./src/hub_tool_example.ts",
+    "start:server": "pnpm dotenv ts-node --project tsconfig.json ./src/server_tool_example.ts",
+  },
   "dependencies": {
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",

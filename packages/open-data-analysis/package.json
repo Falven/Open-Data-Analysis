@@ -5,11 +5,16 @@
   "keywords": [],
   "license": "ISC",
   "author": "",
-  "type": "module",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "scripts": {},
+  "scripts": {
+    "build:esm": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib",
+    "build:cjs": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib --cjs",
+    "build:tsc": "tsc --emitDeclarationOnly",
+    "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
+    "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\""
+  },
   "dependencies": {
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
