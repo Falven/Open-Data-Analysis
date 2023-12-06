@@ -219,7 +219,7 @@ kubectl --namespace my-aks-name get service proxy-public
 
 ## 5.4 Running the hub example
 
-Similar to running the Jupyter Server example, running the JupyterHub example requires setting the appropriate environment variables. Create a `.env` file in the root of the project with the relevant values. See the `example.env` file for an example.
+Similar to running the Jupyter Server example, running the JupyterHub example requires setting the appropriate environment variables. Create a `.env` file in the 'examples' package with the relevant values. See the `example.env` file for an example.
 
 To run the example, you can use the `launch.json` configurations by pressing F5 or play in VSCode. Or you can simply run the relevant package script: `pnpm run start:hub`.
 
