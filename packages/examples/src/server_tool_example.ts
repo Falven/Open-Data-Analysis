@@ -77,8 +77,21 @@ const formatAgentSteps = (steps: AgentStep[]): BaseMessage[] =>
     }
   });
 
-const strEscapeSequencesRegExp =
+/**
+ * A regex to detect if a JSON string contains any invalid unicode escape sequences.
+ */
+const UnicodeEscapeSequenceDetector =
   /[\u0000-\u001f\u0022\u005c\ud800-\udfff]|[\ud800-\udbff](?![\udc00-\udfff])|(?:[^\ud800-\udbff]|^)[\udc00-\udfff]/;
+
+/**
+ * JSON-escape a string.
+ * If the string is longer than 5000 characters and is not valid, we just stringifu it,
+ * because it's not worth the performance cost of checking it with the regex.
+ * @param str The string to escape.
+ * @returns The escaped string.
+ */
+const escapeJson = (str: string): string =>
+  str.length < 5000 && !UnicodeEscapeSequenceDetector.test(str) ? `"${str}"` : JSON.stringify(str);
 
 /**
  * Construct the runnable agent.
@@ -101,13 +114,22 @@ const runnableAgent = RunnableSequence.from([
   },
   prompt,
   modelWithFunctions,
+  /**
+   * A chain to JSON-escape the function call argument output of the agent.
+   * This is needed because the generated code that the LLM provides
+   * may not be properly escaped and cause errors.
+   * @param output The Message from the agent.
+   * @returns The Message from the agent with properly JSON-escaped function call arguments.
+   */
   (output: any): any => {
-    if (output && output.additional_kwargs && output.additional_kwargs.function_call) {
-      const args = output.additional_kwargs.function_call.arguments;
-      output.additional_kwargs.function_call.arguments =
-        args.length < 5000 && !strEscapeSequencesRegExp.test(args)
-          ? `"${args}"`
-          : JSON.stringify(args);
+    if (
+      output !== undefined &&
+      output.additional_kwargs &&
+      output.additional_kwargs.function_call
+    ) {
+      output.additional_kwargs.function_call.arguments = escapeJson(
+        output.additional_kwargs.function_call.arguments,
+      );
     }
     return output;
   },
@@ -123,6 +145,9 @@ const executor = AgentExecutor.fromAgentAndTools({
   tools,
 });
 
+/**
+ * Define a chat loop to interact with the agent.
+ */
 const chatLoop = async () => {
   const exit = (): void => {
     console.log('\nExiting...');
