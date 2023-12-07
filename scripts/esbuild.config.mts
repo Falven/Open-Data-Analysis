@@ -3,15 +3,15 @@ import { glob } from 'glob';
 import { ChildProcess, spawn } from 'node:child_process';
 
 const args = process.argv.slice(2);
+const externalArg = '--external-';
 
 const parseExternals = (args: string[]): string[] => {
-  const externals = [];
-  for (const arg of args) {
-    if (arg.startsWith('--external-')) {
-      externals.push(arg.replace('--external-', ''));
+  return args.reduce((acc: string[], arg: string) => {
+    if (arg.startsWith(externalArg)) {
+      acc.push(arg.replace(externalArg, ''));
     }
-  }
-  return externals;
+    return acc;
+  }, []);
 };
 
 const esmOptions: Partial<BuildOptions> = {
@@ -26,7 +26,7 @@ const cjsOptions: Partial<BuildOptions> = {
 
 let serverProcess: ChildProcess | null = null;
 
-const startServer = () => {
+const startServer = (): void => {
   if (serverProcess !== null) {
     serverProcess.kill();
   }
@@ -66,18 +66,19 @@ const appOptions: Partial<BuildOptions> = {
   bundle: false,
   plugins,
   external: parseExternals(args),
-//   banner: {
-//     js: `import { createRequire as esbCreateRequire } from 'module';
-// import { fileURLToPath as esbFileURLToPath } from 'url';
-// import { dirname as esbDirname } from 'node:path';
-// const require = esbCreateRequire(import.meta.url);
-// const __filename = esbFileURLToPath(import.meta.url);
-// const __dirname = esbDirname(__filename);`,
-//   },
+  banner: {
+    js: `import { createRequire as esbCreateRequire } from 'module';
+import { fileURLToPath as esbFileURLToPath } from 'url';
+import { dirname as esbDirname } from 'node:path';
+const require = esbCreateRequire(import.meta.url);
+const __filename = esbFileURLToPath(import.meta.url);
+const __dirname = esbDirname(__filename);`,
+  },
 };
 
+const entryPoints = await glob('src/**/*.ts');
 const libOptions: Partial<BuildOptions> = {
-  entryPoints: await glob('src/**/*.ts'),
+  entryPoints,
   outdir: 'dist/',
 };
 
