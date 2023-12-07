@@ -92,7 +92,12 @@ corepack enable
 corepack prepare pnpm@latest --activate
 ```
 
-Install dependencies with `pnpm install`.
+Install dependencies and build the package:
+
+```shell
+pnpm install
+pnpm --filter open-data-analysis build
+```
 
 To run the example, use the `launch.json` configurations in VSCode (F5 or play) or execute `pnpm run start:server`.
 
