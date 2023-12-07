@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../dist",
     "rootDir": "./src",
-    "allowSyntheticDefaultImports": true
+    "esModuleInterop": true
   },
   "ts-node": {
     "esm": true,

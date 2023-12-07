@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline';
-import { AgentExecutor, OpenAIAgent } from 'langchain/agents';
+import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
 import { AIMessage, AgentStep, BaseMessage, FunctionMessage } from 'langchain/schema';
@@ -8,39 +8,23 @@ import { formatToOpenAIFunction } from 'langchain/tools';
 import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { v4 as uuidv4 } from 'uuid';
-import { getRequiredEnvVar } from 'open-data-analysis/utils';
 import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
 
-const azureOpenAIApiKey = getRequiredEnvVar('AZURE_OPENAI_API_KEY');
-const azureOpenAIApiInstanceName = getRequiredEnvVar('AZURE_OPENAI_API_INSTANCE_NAME');
-const azureOpenAIApiDeploymentName = getRequiredEnvVar('AZURE_OPENAI_API_DEPLOYMENT_NAME');
-const azureOpenAIApiVersion = getRequiredEnvVar('AZURE_OPENAI_API_VERSION');
-
-/** Define your list of tools. */
-const tools = [new CodeInterpreter({ userId: 'user', conversationId: uuidv4() })];
-
 /**
- * Define your chat model to use.
- * In this example we'll use gpt-4 as it is much better
- * at following directions in an agent than other models.
+ * Define our chat model and it's parameters.
+ * We are using the Chat endpoints so we use `ChatOpenAI`.
  */
 const model = new ChatOpenAI({
   modelName: 'gpt-4-1106',
   temperature: 0.7,
-  azureOpenAIApiKey,
-  azureOpenAIApiInstanceName,
-  azureOpenAIApiDeploymentName,
-  azureOpenAIApiVersion,
   verbose: true,
 });
 
-// const memory = new BufferMemory({
-//   returnMessages: true,
-//   memoryKey: 'chat_history',
-//   inputKey: 'input',
-//   outputKey: 'output',
-// });
-
+/**
+ * Define memory to hold future chat history.
+ * variables: history, input, output.
+ * `returnMessages`: returns messages in a list instead of a string - better for Chat models.
+ */
 const memory = new BufferMemory({
   memoryKey: 'history',
   inputKey: 'input',
@@ -48,25 +32,31 @@ const memory = new BufferMemory({
   returnMessages: true,
 });
 
+// Define our tools.
+const tools = [new CodeInterpreter({ userId: 'user', conversationId: uuidv4() })];
+
 /**
  * Define your prompt for the agent to follow
  * Here we're using `MessagesPlaceholder` to contain our agent scratchpad
  * This is important as later we'll use a util function which formats the agent
  * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
  */
+/**
+ * Define our prompt:
+ * - We will begin with a system message informing the assistant of it's responsibilities.
+ * - We then use a `MessagesPlaceholder` to hold any chat history up to this point.
+ * - We then pass the human's message to the agent, as defined by the `input` variable.
+ * - We then use another `MessagesPlaceholder` to hold the agent's scratchpad (notes).
+ */
 const prompt = ChatPromptTemplate.fromMessages([
-  ['ai', 'You are a helpful assistant.'],
+  ['system', 'You are a helpful assistant.'],
   new MessagesPlaceholder('chat_history'),
   ['human', '{input}'],
   new MessagesPlaceholder('agent_scratchpad'),
 ]);
 
-// const prompt = OpenAIAgent.createPrompt(tools, {
-//   prefix: 'You are a helpful AI assistant.',
-// });
-
 /**
- * Bind the tools to the LLM.
+ * Enhance our model with tools as openai functions.
  * Here we're using the `formatToOpenAIFunction` util function
  * to format our tools into the proper schema for OpenAI functions.
  */
@@ -86,6 +76,9 @@ const formatAgentSteps = (steps: AgentStep[]): BaseMessage[] =>
       return [new AIMessage(action.log)];
     }
   });
+
+const strEscapeSequencesRegExp =
+  /[\u0000-\u001f\u0022\u005c\ud800-\udfff]|[\ud800-\udbff](?![\udc00-\udfff])|(?:[^\ud800-\udbff]|^)[\udc00-\udfff]/;
 
 /**
  * Construct the runnable agent.
@@ -108,10 +101,22 @@ const runnableAgent = RunnableSequence.from([
   },
   prompt,
   modelWithFunctions,
+  (output: any): any => {
+    if (output && output.additional_kwargs && output.additional_kwargs.function_call) {
+      const args = output.additional_kwargs.function_call.arguments;
+      output.additional_kwargs.function_call.arguments =
+        args.length < 5000 && !strEscapeSequencesRegExp.test(args)
+          ? `"${args}"`
+          : JSON.stringify(args);
+    }
+    return output;
+  },
   new OpenAIFunctionsAgentOutputParser(),
 ]);
 
-/** Pass the runnable along with the tools to create the Agent Executor */
+/**
+ * Pass the runnable along with the tools to create the Agent Executor
+ */
 const executor = AgentExecutor.fromAgentAndTools({
   tags: ['openai-functions'],
   agent: runnableAgent,

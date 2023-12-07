@@ -5,14 +5,7 @@
     "rootDir": "./src",
     "declaration": true,
     "declarationDir": "./dist/",
-    "emitDeclarationOnly": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
-    "importHelpers": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true
+    "emitDeclarationOnly": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
