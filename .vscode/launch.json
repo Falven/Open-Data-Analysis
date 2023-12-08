@@ -5,17 +5,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Playground",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "examples", "start:playground"],
-      "skipFiles": ["<node_internals>/**"],
-      "type": "node",
-      "outputCapture": "std",
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Run Jupyter Server Example",
       "request": "launch",
       "cwd": "${workspaceFolder}",
