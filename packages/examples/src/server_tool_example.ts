@@ -1,4 +1,3 @@
-import { createInterface } from 'node:readline';
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
@@ -7,6 +6,7 @@ import { RunnableSequence } from 'langchain/schema/runnable';
 import { formatToOpenAIFunction } from 'langchain/tools';
 import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
+import { createInterface } from 'node:readline';
 import { v4 as uuidv4 } from 'uuid';
 import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
 
@@ -35,12 +35,6 @@ const memory = new BufferMemory({
 // Define our tools.
 const tools = [new CodeInterpreter({ userId: 'user', conversationId: uuidv4() })];
 
-/**
- * Define your prompt for the agent to follow
- * Here we're using `MessagesPlaceholder` to contain our agent scratchpad
- * This is important as later we'll use a util function which formats the agent
- * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
- */
 /**
  * Define our prompt:
  * - We will begin with a system message informing the assistant of it's responsibilities.
@@ -122,11 +116,7 @@ const runnableAgent = RunnableSequence.from([
    * @returns The Message from the agent with properly JSON-escaped function call arguments.
    */
   (output: any): any => {
-    if (
-      output !== undefined &&
-      output.additional_kwargs &&
-      output.additional_kwargs.function_call
-    ) {
+    if (output?.additional_kwargs?.function_call?.arguments !== undefined) {
       output.additional_kwargs.function_call.arguments = escapeJson(
         output.additional_kwargs.function_call.arguments,
       );
