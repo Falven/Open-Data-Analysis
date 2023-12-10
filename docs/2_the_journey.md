@@ -109,7 +109,7 @@ Another promising solution to a the generated files challenge can be found below
 
 > Assistant: The `sandbox:/` prefix in my memory refers to a virtualized file system environment where I can safely execute code and store files temporarily during our interaction. It's like a sandboxed area that is isolated from the rest of the system to prevent any unintended side effects or security issues. When I execute Python code or handle file operations, I use this sandboxed environment to ensure that the operations are contained and do not affect anything outside of our session. Files saved in this environment are not persistent and are typically cleared after the session ends or after a certain period of inactivity. This allows me to perform tasks such as running code snippets, generating files, or processing data in a secure and controlled manner. If you have any tasks that involve code execution or file manipulation, I can use this sandboxed environment to assist you.
 
-The [upcoming Assistants Code Interpreter](https://platform.openai.com/docs/assistants/tools/code-interpreter) offering provides additional insights into the assistant's fine-tuning behavior.
+The [upcoming Assistants Code Interpreter](https://platform.openai.com/docs/assistants/tools/code-interpreter) offering provides additional insights into the assistant's fine-tuned behavior.
 
 ## 2.5.1 Limitations with Alignment:
 
