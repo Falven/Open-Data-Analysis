@@ -1,7 +1,7 @@
 import { join, posix } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { StructuredTool, Tool } from 'langchain/tools';
+import { StructuredTool } from 'langchain/tools';
 import { ContentsManager, SessionManager } from '@jupyterlab/services';
 import { IOutput } from '@jupyterlab/nbformat';
 import { z } from 'zod';
@@ -15,6 +15,7 @@ import {
   isDisplayData,
 } from '../utils/jupyterServerUtils.js';
 import { getDirname } from '../utils/envUtils.js';
+import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 
 /**
  * The particular user and conversation in which the interpreter is being used.
@@ -24,21 +25,19 @@ export type InterpreterOptions = {
   conversationId: string;
 };
 
+const codeInterpreterSchema = z.object({
+  input: z.string().describe('The python code to execute.'),
+});
+
+type CodeInterpreterZodSchema = typeof codeInterpreterSchema;
+
 /**
  * A simple example on how to use Jupyter server as a code interpreter.
  */
-export class CodeInterpreter extends StructuredTool {
+export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   name: string;
   description: string;
-  schema: z.ZodObject<
-    any,
-    any,
-    any,
-    any,
-    {
-      [x: string]: any;
-    }
-  >;
+  schema: CodeInterpreterZodSchema;
 
   userId: string;
   conversationId: string;
@@ -59,9 +58,7 @@ export class CodeInterpreter extends StructuredTool {
     // GPT4 Advanced Data Analysis prompt
     this.description =
       "When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to create links to images as they will not work.";
-    this.schema = z.object({
-      input: z.string().describe('The python code to execute.'),
-    });
+    this.schema = codeInterpreterSchema;
 
     // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
     this.userId = userId;
@@ -112,10 +109,11 @@ export class CodeInterpreter extends StructuredTool {
    * @param arg The code to execute.
    * @returns The code execution output.
    */
-  async _call({ input }: { input: string }): Promise<string> {
+  async _call({ input }: z.infer<CodeInterpreterZodSchema>): Promise<string> {
     try {
       if (input === undefined) {
-        throw new Error(`Expected code input.`);
+        const instructions = renderTextDescriptionAndArgs([this]);
+        throw new Error(instructions);
       }
 
       // Get or Create the notebook if it doesn't exist.
