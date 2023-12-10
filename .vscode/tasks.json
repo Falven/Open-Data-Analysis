@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "build:dev",
+      "path": "packages/open-data-analysis",
+      "group": {
+        "kind": "build"
+      },
+      "problemMatcher": [],
+      "label": "npm: build:dev - packages/open-data-analysis"
+    }
+  ]
+}
