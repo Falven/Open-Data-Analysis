@@ -1,16 +1,9 @@
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
-import {
-  AIMessage,
-  AgentAction,
-  AgentFinish,
-  AgentStep,
-  BaseMessage,
-  FunctionMessage,
-} from 'langchain/schema';
+import { AIMessage, AgentStep, BaseMessage, FunctionMessage } from 'langchain/schema';
 import { RunnablePassthrough, RunnableSequence } from 'langchain/schema/runnable';
-import { formatToOpenAIFunction } from 'langchain/tools';
+import { StructuredTool, formatToOpenAIFunction } from 'langchain/tools';
 import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { createInterface } from 'node:readline';
@@ -37,7 +30,18 @@ const memory = new BufferMemory({
 });
 
 // Define our tools, including our Code Interpreter.
-const tools = [new CodeInterpreter({ userId: 'user', conversationId: randomUUID() })];
+const tools: StructuredTool[] = [
+  new CodeInterpreter({ userId: 'user', conversationId: randomUUID() }),
+];
+
+/**
+ * Enhance our model with tools as openai functions.
+ * Here we're using the `formatToOpenAIFunction` util function
+ * to format our tools into the proper schema for OpenAI functions.
+ */
+const modelWithFunctions = model.bind({
+  functions: tools.map(formatToOpenAIFunction),
+});
 
 /**
  * Define our prompt:
@@ -52,31 +56,6 @@ const prompt = ChatPromptTemplate.fromMessages([
   ['human', '{input}'],
   new MessagesPlaceholder('agent_scratchpad'),
 ]);
-
-/**
- * Enhance our model with tools as openai functions.
- * Here we're using the `formatToOpenAIFunction` util function
- * to format our tools into the proper schema for OpenAI functions.
- */
-const modelWithFunctions = model.bind({
-  functions: [...tools.map(formatToOpenAIFunction)],
-});
-
-/**
- * A regex to detect if a JSON string contains any invalid unicode escape sequences.
- */
-const UnicodeEscapeSequenceDetector =
-  /[\u0000-\u001f\u0022\u005c\ud800-\udfff]|[\ud800-\udbff](?![\udc00-\udfff])|(?:[^\ud800-\udbff]|^)[\udc00-\udfff]/;
-
-/**
- * JSON-escape a string.
- * If the string is longer than 5000 characters and is not valid, we just stringifu it,
- * because it's not worth the performance cost of checking it with the regex.
- * @param str The string to escape.
- * @returns The escaped string.
- */
-const escapeJson = (str: string): string =>
-  str.length < 5000 && !UnicodeEscapeSequenceDetector.test(str) ? `"${str}"` : JSON.stringify(str);
 
 /**
  * Define a new agent steps parser.
@@ -104,30 +83,20 @@ const agent = RunnableSequence.from([
   prompt,
   // Invoke the LLM.
   modelWithFunctions,
-  /**
-   * JSON-escape the function call argument output of the agent.
-   * This is needed because the generated code that the LLM provides
-   * may not be properly escaped and cause errors.
-   * @param output The Message from the agent.
-   * @returns The Message from the agent with properly JSON-escaped function call arguments.
-   */
-  async (parserInput): Promise<AgentAction | AgentFinish> => {
-    const functionCall = (parserInput as BaseMessage).additional_kwargs?.function_call;
-    if (functionCall !== undefined) {
-      functionCall.arguments = escapeJson(functionCall.arguments);
-    }
-    return await new OpenAIFunctionsAgentOutputParser().invoke(parserInput);
-  },
+  // Parse the output.
+  new OpenAIFunctionsAgentOutputParser(),
 ]);
 
-/**
- * Pass the runnable along with the tools to create the Agent Executor
- */
 const executor = AgentExecutor.fromAgentAndTools({
   tags: ['openai-functions'],
   agent,
   tools,
 });
+
+// const executor = await initializeAgentExecutorWithOptions(tools, model, {
+//   agentType: "openai-functions",
+//   verbose: true,
+// });
 
 /**
  * Define a chat loop to interact with the agent.

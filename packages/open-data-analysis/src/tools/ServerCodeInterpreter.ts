@@ -84,7 +84,7 @@ export class CodeInterpreter extends StructuredTool {
   saveImage(base64ImageData: string): void {
     const imageData = Buffer.from(base64ImageData, 'base64');
     const imageName = `${randomUUID()}.png`;
-    const imagePath = join(getDirname(), '..', '..', 'images', imageName);
+    const imagePath = join(getDirname(), '..', '..', '..', 'images', imageName);
     writeFileSync(imagePath, imageData);
   }
 
