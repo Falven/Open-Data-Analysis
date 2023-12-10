@@ -7,7 +7,7 @@ import { RunnableSequence } from 'langchain/schema/runnable';
 import { formatToOpenAIFunction } from 'langchain/tools';
 import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { getRequiredEnvVar } from '../../open-data-analysis/src/utils/envUtils';
 import { CodeInterpreter } from 'open-data-analysis/src/tools/HubCodeInterpreter/HubCodeInterpreter';
 
@@ -17,7 +17,7 @@ const azureOpenAIApiDeploymentName = getRequiredEnvVar('AZURE_OPENAI_API_DEPLOYM
 const azureOpenAIApiVersion = getRequiredEnvVar('AZURE_OPENAI_API_VERSION');
 
 /** Define your list of tools. */
-const tools = [new CodeInterpreter({ userId: 'user', conversationId: uuidv4() })];
+const tools = [new CodeInterpreter({ userId: 'user', conversationId: randomUUID() })];
 
 /**
  * Define your chat model to use.

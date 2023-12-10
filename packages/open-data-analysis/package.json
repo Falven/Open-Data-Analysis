@@ -5,37 +5,8 @@
   "keywords": [],
   "license": "ISC",
   "author": "",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "type": "module",
-  "scripts": {
-    "build:esm": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib",
-    "build:cjs": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib --cjs",
-    "build:tsc": "tsc --emitDeclarationOnly",
-    "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
-    "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\""
-  },
-  "dependencies": {
-    "@jupyterlab/nbformat": "4.1.0-alpha.4",
-    "@jupyterlab/services": "^7.0.9",
-    "axios": "^1.6.2",
-    "eventsource": "^2.0.2",
-    "langchain": "^0.0.199",
-    "uuid": "^9.0.1"
-  },
-  "devDependencies": {
-    "@types/eventsource": "^1.1.15",
-    "@types/node": "^20.10.1",
-    "@types/uuid": "^9.0.7",
-    "concurrently": "^8.2.2",
-    "dotenv-cli": "^7.3.0",
-    "esbuild": "^0.19.8",
-    "glob": "^10.3.10",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
-  },
   "exports": {
-    "./package.json": "./package.json",
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -52,5 +23,34 @@
       "types": "./dist/tools/ServerCodeInterpreter.d.ts",
       "import": "./dist/tools/ServerCodeInterpreter.js"
     }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
+    "build:cjs": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib --cjs",
+    "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\"",
+    "build:esm": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib",
+    "build:tsc": "tsc --emitDeclarationOnly"
+  },
+  "dependencies": {
+    "@jupyterlab/nbformat": "4.1.0-alpha.4",
+    "@jupyterlab/services": "^7.0.9",
+    "axios": "^1.6.2",
+    "eventsource": "^2.0.2",
+    "langchain": "^0.0.199"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "@types/node": "^20.10.1",
+    "concurrently": "^8.2.2",
+    "dotenv-cli": "^7.3.0",
+    "esbuild": "^0.19.8",
+    "glob": "^10.3.10",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

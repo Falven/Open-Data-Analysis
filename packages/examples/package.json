@@ -9,25 +9,18 @@
   "scripts": {
     "build": "pnpm ts-node --esm ../../scripts/esbuild.config.mts",
     "build:dev": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev",
-    "watch": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev --watch",
     "dev:server": "dotenv node dist/server_tool_example.js",
-    "start:server": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/server_tool_example.ts",
     "start:hub": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/hub_tool_example.ts",
-    "start:playground": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/playground.ts"
+    "start:playground": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/playground.ts",
+    "start:server": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/server_tool_example.ts",
+    "watch": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev --watch"
   },
   "dependencies": {
-    "@jupyterlab/nbformat": "4.1.0-alpha.4",
-    "@jupyterlab/services": "^7.0.9",
-    "axios": "^1.6.2",
-    "eventsource": "^2.0.2",
     "langchain": "^0.0.199",
-    "open-data-analysis": "workspace:^",
-    "uuid": "^9.0.1"
+    "open-data-analysis": "workspace:^"
   },
   "devDependencies": {
-    "@types/eventsource": "^1.1.15",
     "@types/node": "^20.10.1",
-    "@types/uuid": "^9.0.7",
     "concurrently": "^8.2.2",
     "dotenv-cli": "^7.3.0",
     "esbuild": "^0.19.8",
