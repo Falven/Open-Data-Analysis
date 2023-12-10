@@ -20,24 +20,24 @@ import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 /**
  * The particular user and conversation in which the interpreter is being used.
  */
-export type InterpreterOptions = {
+export type PythonOptions = {
   userId: string;
   conversationId: string;
 };
 
-const codeInterpreterSchema = z.object({
+const pythonSchema = z.object({
   input: z.string().describe('The python code to execute.'),
 });
 
-type CodeInterpreterZodSchema = typeof codeInterpreterSchema;
+type PythonZodSchema = typeof pythonSchema;
 
 /**
  * A simple example on how to use Jupyter server as a code interpreter.
  */
-export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
+export class Python extends StructuredTool<PythonZodSchema> {
   name: string;
   description: string;
-  schema: CodeInterpreterZodSchema;
+  schema: PythonZodSchema;
 
   userId: string;
   conversationId: string;
@@ -51,14 +51,14 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
    * Constructs a new CodeInterpreter Tool for a particular user and their conversation.
    * @param interpreterOptions The options for the interpreter.
    */
-  constructor({ userId, conversationId }: InterpreterOptions) {
+  constructor({ userId, conversationId }: PythonOptions) {
     super();
 
     this.name = 'python';
     // GPT4 Advanced Data Analysis prompt
     this.description =
-      "When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to create links to images as they will not work.";
-    this.schema = codeInterpreterSchema;
+      "When you send a message containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to create links as they will not work.";
+    this.schema = pythonSchema;
 
     // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
     this.userId = userId;
@@ -109,7 +109,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
    * @param arg The code to execute.
    * @returns The code execution output.
    */
-  async _call({ input }: z.infer<CodeInterpreterZodSchema>): Promise<string> {
+  async _call({ input }: z.infer<PythonZodSchema>): Promise<string> {
     if (input === undefined) {
       return renderTextDescriptionAndArgs([this]);
     }
