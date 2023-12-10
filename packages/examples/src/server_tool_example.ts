@@ -1,15 +1,19 @@
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
-import { AIMessage, AgentStep, BaseMessage, FunctionMessage } from 'langchain/schema';
+import { BaseMessage } from 'langchain/schema';
 import { RunnablePassthrough, RunnableSequence } from 'langchain/schema/runnable';
-import { StructuredTool, formatToOpenAIFunction } from 'langchain/tools';
-import { OpenAIFunctionsAgentOutputParser } from 'langchain/agents/openai/output_parser';
+import { StructuredTool, formatToOpenAITool } from 'langchain/tools';
+import {
+  OpenAIToolsAgentOutputParser,
+  ToolsAgentStep,
+} from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
 import type { AgentInput } from './types.js';
+import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 
 /**
  * Define our chat model and it's parameters.
@@ -35,12 +39,12 @@ const tools: StructuredTool[] = [
 ];
 
 /**
- * Enhance our model with tools as openai functions.
- * Here we're using the `formatToOpenAIFunction` util function
- * to format our tools into the proper schema for OpenAI functions.
+ * Enhance our model with openai tools.
+ * Here we're using the `formatToOpenAITool` utility
+ * to format our tools into the proper schema for OpenAI.
  */
-const modelWithFunctions = model.bind({
-  functions: [...tools.map((tool) => formatToOpenAIFunction(tool))],
+const modelWithTools = model.bind({
+  tools: tools.map(formatToOpenAITool),
 });
 
 /**
@@ -58,45 +62,29 @@ const prompt = ChatPromptTemplate.fromMessages([
 ]);
 
 /**
- * Define a new agent steps parser.
- */
-const formatAgentSteps = (steps: AgentStep[]): BaseMessage[] =>
-  steps.flatMap(({ action, observation }) =>
-    'messageLog' in action && action.messageLog !== undefined
-      ? (action.messageLog as BaseMessage[]).concat(new FunctionMessage(observation, action.tool))
-      : [new AIMessage(action.log)],
-  );
-
-/**
  * Construct our runnable agent.
- * We're using our custom `formatAgentSteps` function instead of `formatForOpenAIFunctions` to format the agent
+ * We're using `formatToOpenAIToolMessages` to format the agent
  * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
  */
 const agent = RunnableSequence.from([
   // Passthrough to add the agent scratchpad and chat history.
   (RunnablePassthrough<AgentInput>).assign({
-    agent_scratchpad: ({ steps }) => formatAgentSteps(steps as AgentStep[]),
+    agent_scratchpad: ({ steps }) => formatToOpenAIToolMessages(steps as ToolsAgentStep[]),
     chat_history: async (): Promise<BaseMessage[]> =>
       (await memory.loadMemoryVariables({})).chat_history,
   }),
   // Invoke the prompt.
   prompt,
   // Invoke the LLM.
-  modelWithFunctions,
+  modelWithTools,
   // Parse the output.
-  new OpenAIFunctionsAgentOutputParser(),
+  new OpenAIToolsAgentOutputParser(),
 ]);
 
 const executor = AgentExecutor.fromAgentAndTools({
-  tags: ['openai-functions'],
   agent,
   tools,
 });
-
-// const executor = await initializeAgentExecutorWithOptions(tools, model, {
-//   agentType: "openai-functions",
-//   verbose: true,
-// });
 
 /**
  * Define a chat loop to interact with the agent.
