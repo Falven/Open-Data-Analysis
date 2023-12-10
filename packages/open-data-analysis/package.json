@@ -28,9 +28,9 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
-    "build:cjs": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib --cjs",
+    "build:cjs": "pnpm ts-node-esm --project tsconfig.json ../../scripts/esbuild.config.ts --lib --cjs",
     "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\"",
-    "build:esm": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --lib",
+    "build:esm": "pnpm ts-node-esm --project tsconfig.json ../../scripts/esbuild.config.ts --lib",
     "build:tsc": "tsc --emitDeclarationOnly"
   },
   "dependencies": {
@@ -38,7 +38,8 @@
     "@jupyterlab/services": "^7.0.9",
     "axios": "^1.6.2",
     "eventsource": "^2.0.2",
-    "langchain": "^0.0.199"
+    "langchain": "^0.0.199",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/eventsource": "^1.1.15",

@@ -17,15 +17,7 @@
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/examples",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "dotenv",
-        "ts-node",
-        "--loader",
-        "ts-node/esm",
-        "--project",
-        "tsconfig.json",
-        "./src/playground.ts"
-      ],
+      "runtimeArgs": ["dotenv", "ts-node-esm", "--project", "tsconfig.json", "./src/playground.ts"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std",

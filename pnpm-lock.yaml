@@ -127,6 +127,9 @@ importers:
       langchain:
         specifier: ^0.0.199
         version: 0.0.199(axios@1.6.2)
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
     devDependencies:
       '@types/eventsource':
         specifier: ^1.1.15

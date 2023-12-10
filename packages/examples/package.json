@@ -7,13 +7,11 @@
   "author": "",
   "type": "module",
   "scripts": {
-    "build": "pnpm ts-node --esm ../../scripts/esbuild.config.mts",
-    "build:dev": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev",
-    "dev:server": "dotenv node dist/server_tool_example.js",
-    "start:hub": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/hub_tool_example.ts",
-    "start:playground": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/playground.ts",
-    "start:server": "pnpm dotenv ts-node --loader ts-node/esm --project tsconfig.json ./src/server_tool_example.ts",
-    "watch": "pnpm ts-node --esm ../../scripts/esbuild.config.mts --dev --watch"
+    "build": "pnpm ts-node-esm ../../scripts/esbuild.config.ts",
+    "build:dev": "pnpm ts-node-esm ../../scripts/esbuild.config.ts --dev",
+    "start:hub": "pnpm dotenv ts-node-esm --project tsconfig.json ./src/hub_tool_example.ts",
+    "start:server": "pnpm dotenv ts-node-esm --project tsconfig.json ./src/server_tool_example.ts",
+    "watch": "pnpm ts-node-esm ../../scripts/esbuild.config.ts --dev --watch"
   },
   "dependencies": {
     "langchain": "^0.0.199",

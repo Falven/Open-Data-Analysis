@@ -10,12 +10,9 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "workspaces": [
     "packages/*"
   ],
-  "scripts": {},
   "dependencies": {
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
