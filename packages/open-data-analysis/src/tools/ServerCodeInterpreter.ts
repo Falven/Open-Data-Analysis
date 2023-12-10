@@ -112,8 +112,8 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   async _call({ input }: z.infer<CodeInterpreterZodSchema>): Promise<string> {
     try {
       if (input === undefined) {
-        const instructions = renderTextDescriptionAndArgs([this]);
-        throw new Error(instructions);
+        const usage = renderTextDescriptionAndArgs([this]);
+        throw new Error(usage);
       }
 
       // Get or Create the notebook if it doesn't exist.
