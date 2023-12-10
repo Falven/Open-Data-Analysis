@@ -57,6 +57,10 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   contentsManager: ContentsManager;
   sessionManager: SessionManager;
 
+  static lc_name() {
+    return 'CodeInterpreter';
+  }
+
   /**
    * Constructs a new CodeInterpreter Tool for a particular user and their conversation.
    * @param interpreterOptions The options for the interpreter.
@@ -65,6 +69,8 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     super();
 
     this.schema = codeInterpreterSchema;
+
+    // OpenAI functions additionally use the Tool name to gain insigths into using it.
     this.name = 'code_interpreter';
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model =
