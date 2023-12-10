@@ -13,8 +13,9 @@ We first need a service running langchain or a comparable framework that gives u
 > Some applications require a flexible chain of calls to LLMs and other tools based on user input. The Agent interface provides the flexibility for such applications. An agent has access to a suite of tools, and determines which ones to use depending on the user input. Agents can use multiple tools, and use the output of one tool as the input to the next.
 
 Once we have an agent, we can equip it with a tool to interpret code. The basic flow for Code Interpretation is as follows:
+
 1. User Request: You request the Agent to develop or run code to achieve a specific task.
-2. Code Development and Integration: The agent drafts the necessary code. If the task involves complex or external computations, the agent, integrated with a framework like LangChain, invokes a specific, appropriate, Tool, passing the code through the tool's interface (e.g., the _call method in the LangChain implementation) for execution.
+2. Code Development and Integration: The agent drafts the necessary code. If the task involves complex or external computations, the agent, integrated with a framework like LangChain, invokes a specific, appropriate, Tool, passing the code through the tool's interface (e.g., the \_call method in the LangChain implementation) for execution.
 3. Code Execution: The designated tool executes the code. This process might involve interactions with various backend systems, APIs, or computational resources, depending on the nature of the task and the capabilities of the tool. At this point, the agent may also go back to step 2 to refine the code or perform additional actions.
 4. Result Analysis and Response: Once the tool returns the output, the agent interprets the results. This step often involves a combination of automated analysis and the agent's built-in capabilities to understand and contextualize the output.
 5. User Feedback: The agent communicates the outcome back to you. This might include the direct results of the code execution, additional insights, explanations, or recommendations for further actions based on the results.
@@ -101,6 +102,30 @@ However, reverse engineering also showed that GPT's code interpretation capabili
 > GPT: Yes, that's correct. The information about operational limits like the 100 MB file upload restriction is part of the broader training and fine-tuning data that I have received, rather than being explicitly detailed in a system prompt or a specific document. My responses are informed by a combination of the general training data provided by OpenAI, which encompasses a wide range of texts and information, and any additional fine-tuning that focuses on specific use-cases or operational guidelines for the ChatGPT model. These guidelines are ingrained in the model's responses and capabilities but are not separately documented for direct access or citation.
 
 This means that we cannot simply undo this training/tuning to make it use tools in our preferred manner. Instead, it would be more effective to change our tools to work in the manner GPT expects, and utilize a combination of prompt engineering and fine-tuning sparingly to simply help guide its use in areas that do not conflict with its inherent capabilities.
+
+## 2.4.2 Limitations with Alignment:
+
+When defining your Tool/Function for GPT to invoke, the ideal approach would be to align to GPT's capabilities, as such it would be better to name your tool "python" as can be seen from the system prompt above. The problem that I have observed with this is that the GPT tool accepts a string containing code as the parameter to the function, however, as of 12/10/23, GPT functions do not accept strings as the parameter. It must be an object. So if you name your tool "python" and attempt to align it as much as possible with the GPT python tool, GPT will try to invoke your function with singular strings as the parameter, which will fail. Because of this, I have opted to differentiate my tools name, such that GPT treats it as a different tool and respects the function signature that I have defined.
+
+```json
+{
+  type: "function",
+  function: {
+    name: "CodeInterpreter", // Do not make this "python" as it will conflict with GPT's python tool.
+    description: "When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to display it yourself or create links as they will not work.",
+    parameters: {
+      type: "object", // This has to be an object, unfortunately.
+      properties: {
+        code: {
+          type: "string",
+          description: "The python code to execute.",
+        },
+      },
+      required: ["code"],
+    },
+  },
+},
+```
 
 **Effectiveness Scale:**  
 `Prompting < Fine-Tuning < Native Prompting < Native Fine-Tuning`

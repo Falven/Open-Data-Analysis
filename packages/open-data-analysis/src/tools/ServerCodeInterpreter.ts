@@ -19,24 +19,30 @@ import {
 import { getDirname } from '../utils/envUtils.js';
 
 /**
- * The particular user and conversation in which the interpreter is being used.
+ * Our CodeInterpreter tool options.
  */
-export type PythonOptions = {
+export type CodeInterpreterOptions = {
   userId: string;
   conversationId: string;
 };
 
-const pythonSchema = z.object({
+/**
+ * Define our OpenAI Function Schema using a Zod Schema.
+ */
+const codeInterpreterSchema = z.object({
   code: z.string().describe('The python code to execute.'),
 });
 
-type PythonZodSchema = typeof pythonSchema;
+/**
+ * Get the type of the Zod schema.
+ */
+type CodeInterpreterZodSchema = typeof codeInterpreterSchema;
 
 /**
  * A simple example on how to use Jupyter server as a code interpreter.
  */
-export class Python extends StructuredTool<PythonZodSchema> {
-  schema: PythonZodSchema;
+export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
+  schema: CodeInterpreterZodSchema;
   name: string;
   description: string;
   description_for_model: string;
@@ -53,16 +59,14 @@ export class Python extends StructuredTool<PythonZodSchema> {
    * Constructs a new CodeInterpreter Tool for a particular user and their conversation.
    * @param interpreterOptions The options for the interpreter.
    */
-  constructor({ userId, conversationId }: PythonOptions) {
+  constructor({ userId, conversationId }: CodeInterpreterOptions) {
     super();
 
-    this.schema = pythonSchema;
-    this.name = 'python';
+    this.schema = codeInterpreterSchema;
+    this.name = 'code_interpreter';
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model =
-      this.description = `When you send a message in the format \`${zodToJsonSchema(
-        pythonSchema,
-      )}\` containing Python code to python, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to create links as they will not work.`;
+      this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. The tool will inform you when an image is displayed to the user. Do not try to display it yourself or create links as they will not work.`;
 
     // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
     this.userId = userId;
@@ -113,7 +117,7 @@ export class Python extends StructuredTool<PythonZodSchema> {
    * @param arg The code to execute.
    * @returns The code execution output.
    */
-  async _call({ code }: z.infer<PythonZodSchema>): Promise<string> {
+  async _call({ code }: z.infer<CodeInterpreterZodSchema>): Promise<string> {
     if (code === undefined) {
       return renderTextDescriptionAndArgs([this]);
     }
