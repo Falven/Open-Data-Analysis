@@ -40,7 +40,7 @@ const tools: StructuredTool[] = [
  * to format our tools into the proper schema for OpenAI functions.
  */
 const modelWithFunctions = model.bind({
-  functions: tools.map(formatToOpenAIFunction),
+  functions: [...tools.map((tool) => formatToOpenAIFunction(tool))],
 });
 
 /**
