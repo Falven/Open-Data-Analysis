@@ -15,7 +15,7 @@ import {
   isStreamMsg,
   isErrorMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { getRequiredEnvVar } from './envUtils.js';
 import { Managers } from './jupyterServerTypes.js';
 
@@ -246,7 +246,7 @@ export const addCellsToNotebook = (
     cell_type: 'code',
     source,
     metadata: {},
-    id: uuidv4(),
+    id: randomUUID(),
     outputs,
     execution_count,
   });
