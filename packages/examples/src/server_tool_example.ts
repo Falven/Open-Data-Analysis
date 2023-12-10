@@ -79,12 +79,9 @@ const agent = RunnableSequence.from([
   modelWithTools,
   // Parse the output.
   new OpenAIToolsAgentOutputParser(),
-]);
+]).withConfig({ runName: 'OpenAIToolsAgent' });
 
-const executor = AgentExecutor.fromAgentAndTools({
-  agent,
-  tools,
-});
+const executor = AgentExecutor.fromAgentAndTools({ agent, tools });
 
 /**
  * Define a chat loop to interact with the agent.
