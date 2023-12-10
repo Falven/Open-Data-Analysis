@@ -82,7 +82,7 @@ const libOptions: Partial<BuildOptions> = {
 };
 
 const devOptions: Partial<BuildOptions> = {
-  sourcemap: 'linked',
+  sourcemap: 'inline',
   sourcesContent: true,
   logLevel: 'info',
   minify: false,
