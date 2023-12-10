@@ -9,8 +9,7 @@
   "scripts": {
     "build": "pnpm ts-node-esm ../../scripts/esbuild.config.ts",
     "build:dev": "pnpm ts-node-esm ../../scripts/esbuild.config.ts --dev",
-    "start:hub": "pnpm dotenv ts-node-esm --project tsconfig.json ./src/hub_tool_example.ts",
-    "start:server": "pnpm dotenv ts-node-esm --project tsconfig.json ./src/server_tool_example.ts",
+    "start": "pnpm dotenv ts-node-esm --project tsconfig.json ./src/tool_example.ts",
     "watch": "pnpm ts-node-esm ../../scripts/esbuild.config.ts --dev --watch"
   },
   "dependencies": {

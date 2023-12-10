@@ -3,21 +3,13 @@
   // Hover to view descriptions of existing attributes.
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
-  "inputs": [
-    {
-      "id": "selectExample",
-      "type": "pickString",
-      "description": "Select an example to debug",
-      "options": ["server", "hub"]
-    }
-  ],
   "configurations": [
     {
       "name": "Run Example",
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/examples",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "examples", "start:${input:selectExample}"],
+      "runtimeArgs": ["--filter", "examples", "start"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std",

@@ -17,7 +17,7 @@ import {
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import { randomUUID } from 'node:crypto';
 import { getRequiredEnvVar } from './envUtils.js';
-import { Managers } from './jupyterServerTypes.js';
+import { DisplayCallback, Managers } from './jupyterServerTypes.js';
 
 const serverUrl = getRequiredEnvVar('JUPYTER_URL');
 const token = getRequiredEnvVar('JUPYTER_TOKEN');
@@ -174,57 +174,80 @@ export const getOrCreatePythonSession = async (
 const processMessage = async (
   msg: IIOPubMessage<IOPubMessageType>,
   outputs: IOutput[],
-): Promise<[string, ExecutionCount]> => {
+  onDisplayData?: DisplayCallback,
+): Promise<[string, string, ExecutionCount]> => {
   outputs.push({
     output_type: msg.header.msg_type,
     ...msg.content,
   });
 
-  let result = '';
+  let stdout = '';
+  let stderr = '';
   let execution_count: ExecutionCount = null;
   if (isExecuteResultMsg(msg)) {
     const textOutput = msg.content.data['text/plain'];
-    result += typeof textOutput === 'object' ? JSON.stringify(textOutput) : textOutput;
+    stdout += Array.isArray(textOutput)
+      ? textOutput.join('\n')
+      : typeof textOutput === 'object'
+        ? JSON.stringify(textOutput)
+        : textOutput;
     execution_count = msg.content.execution_count;
   } else if (isDisplayDataMsg(msg)) {
-    // Add text output as part of the result to inform the Assistant that an image was generated.
-    result += 'An image has been generated and displayed to the user.';
+    if (onDisplayData !== undefined) {
+      const imageOutput = msg.content.data['image/png'];
+      const base64ImageData = Array.isArray(imageOutput)
+        ? imageOutput.join('')
+        : typeof imageOutput === 'object'
+          ? JSON.stringify(imageOutput)
+          : imageOutput;
+      const imageName = msg.content.metadata['image/png'];
+      stdout += onDisplayData('image.png', base64ImageData);
+    }
   } else if (isStreamMsg(msg)) {
-    result += msg.content.text;
+    stdout += msg.content.text;
   } else if (isErrorMsg(msg)) {
-    result += msg.content.traceback.join('\n');
+    stderr += msg.content.traceback.join('\n');
   }
 
-  return [result, execution_count];
+  return [stdout, stderr, execution_count];
 };
 
 /**
  * Executes code in the Jupyter kernel and returns a list of outputs and the final result computed from the outputs.
  * @param {Session.ISessionConnection} session The session connection.
- * @param input The code to execute.
+ * @param code The code to execute.
  * @returns {[string, Output[]]} The final result and the list of outputs used to calculate the result.
  */
 export const executeCode = async (
   session: Session.ISessionConnection,
-  input: string,
-): Promise<[string, IOutput[], ExecutionCount]> => {
-  if (!session.kernel) {
+  code: string,
+  onDisplayData?: DisplayCallback,
+): Promise<[string, string, IOutput[], ExecutionCount]> => {
+  if (session.kernel == null) {
     throw new Error('Kernel is not defined');
   }
 
-  const future = session.kernel.requestExecute({ code: input });
+  const future = session.kernel.requestExecute({ code });
 
-  let result = '';
+  let stdOut = '';
+  let stdErr = '';
   let executionCount: ExecutionCount = null;
   const outputs: IOutput[] = [];
+
   future.onIOPub = async (msg) => {
-    const [partialResult, execution_count] = await processMessage(msg, outputs);
-    result += partialResult;
+    const [partialStdOut, partialStdErr, execution_count] = await processMessage(
+      msg,
+      outputs,
+      onDisplayData,
+    );
+    stdOut += partialStdOut;
+    stdErr += partialStdErr;
     executionCount = execution_count;
   };
+
   await future.done;
 
-  return [result, outputs, executionCount];
+  return [stdOut, stdErr, outputs, executionCount];
 };
 
 /**

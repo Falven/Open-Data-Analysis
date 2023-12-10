@@ -1,7 +1,11 @@
+import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+import { createInterface } from 'node:readline';
+import { randomUUID } from 'node:crypto';
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
-import { BaseMessage } from 'langchain/schema';
+import { AgentStep, BaseMessage } from 'langchain/schema';
 import { RunnablePassthrough, RunnableSequence } from 'langchain/schema/runnable';
 import { StructuredTool, formatToOpenAITool } from 'langchain/tools';
 import {
@@ -9,11 +13,21 @@ import {
   ToolsAgentStep,
 } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
-import { createInterface } from 'node:readline';
-import { randomUUID } from 'node:crypto';
 import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
-import type { AgentInput } from './types.js';
+import { getDirname } from 'open-data-analysis/utils';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
+
+/**
+ * Saves an image to the images directory and returns a markdown link to the image.
+ * @param imageName The name of the image.
+ * @param base64ImageData The base64 encoded image data.
+ */
+const saveImage = (imageName: string, base64ImageData: string): string => {
+  const imageData = Buffer.from(base64ImageData, 'base64');
+  const imagePath = join(getDirname(), '..', '..', '..', 'images', imageName);
+  writeFileSync(imagePath, imageData);
+  return `![Generated Image](/images/${imageName})`;
+};
 
 /**
  * Define our chat model and it's parameters.
@@ -35,7 +49,7 @@ const memory = new BufferMemory({
 
 // Define our tools, including our Code Interpreter.
 const tools: StructuredTool[] = [
-  new CodeInterpreter({ userId: 'user', conversationId: randomUUID() }),
+  new CodeInterpreter({ userId: 'user', conversationId: randomUUID(), onImage: saveImage }),
 ];
 
 /**
@@ -46,6 +60,14 @@ const tools: StructuredTool[] = [
 const modelWithTools = model.bind({
   tools: [...tools.map(formatToOpenAITool)],
 });
+
+type UserInput = {
+  input: string;
+};
+
+type AgentInput = UserInput & {
+  steps: AgentStep[];
+};
 
 /**
  * Define our prompt:
@@ -77,27 +99,13 @@ const agent = RunnableSequence.from([
   prompt,
   // Invoke the LLM.
   modelWithTools,
-  /**
-   * JSON-escape the function call argument output of the agent.
-   * This is needed because the generated code that the LLM provides
-   * may not be properly escaped and cause errors.
-   * @param output The Message from the agent.
-   * @returns The Message from the agent with properly JSON-escaped function call arguments.
-   */
-  // async (parserInput): Promise<AgentAction | AgentFinish> => {
-  //   if (parserInput instanceof ToolMessage) {
-  //     const functionCall = parserInput.additional_kwargs?.function_call;
-  //     if (functionCall !== undefined) {
-  //       functionCall.arguments = escapeJson(functionCall.arguments);
-  //     }
-  //   }
-  //   return await new OpenAIFunctionsAgentOutputParser().invoke(parserInput);
-  // },
   // Parse the output.
   new OpenAIToolsAgentOutputParser(),
-  // new EnhancedOpenAIToolsAgentOutputParser(tools),
 ]).withConfig({ runName: 'OpenAIToolsAgent' });
 
+/**
+ * Construct our agent executor from our Runnable.
+ */
 const executor = AgentExecutor.fromAgentAndTools({ agent, tools });
 
 /**
