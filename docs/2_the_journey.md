@@ -111,7 +111,7 @@ Another promising solution to a the generated files challenge can be found below
 
 The [upcoming Assistants Code Interpreter](https://platform.openai.com/docs/assistants/tools/code-interpreter) offering provides additional insights into the assistant's fine-tuning behavior.
 
-## 2.4.2 Limitations with Alignment:
+## 2.5.1 Limitations with Alignment:
 
 When defining your tool/function for GPT invocation, aligning with GPT's capabilities is crucial. Ideally, naming your tool "python," as demonstrated in the system prompt above, seems optimal. However, I've observed an issue: the GPT 'python' tool accepts a string containing code as the parameter. But as of `12/10/23`, GPT functions do not support strings as parameters for tools/functions; they require an object. So, if you name your tool "python" and define an `input` property to align it closely with the GPT python tool, GPT will attempt to invoke your function with singular strings as parameters, instead of an object with, say an `input` parameter, leading to failure. Therefore, we should opt for a different name for our tool to ensure GPT treats it as a distinct function/tool and respects the function signature we define.
 
