@@ -15,6 +15,7 @@ Reverse engineering OpenAI's Advanced Data Analysis feature, formerly Code Inter
    - [2.4 The Problems with Prompt Engineering](docs/2_the_journey.md#24-the-problems-with-prompt-engineering)
      - [2.4.1 Context Window Challenges](docs/2_the_journey.md#241-context-window-challenges)
    - [2.5 The Reversal](docs/2_the_journey.md#25-the-reversal)
+     - [2.5.1 Limitations with Alignment](docs/2_the_journey.md#251-limitations-with-alignment)
 3. [Key Investigation](docs/3_key_investigation.md)
    - [3.1 Solution 2 - Jupyter Server](docs/3_key_investigation.md#31-solution-2---jupyter-server)
    - [3.2 Key Limitations with Solution 2](docs/3_key_investigation.md#32-key-limitations-with-solution-2)
