@@ -22,7 +22,7 @@ export type CodeInterpreterOptions = {
   useHub?: boolean;
   userId: string;
   conversationId: string;
-  onImage?: DisplayCallback;
+  onDisplayData?: DisplayCallback;
 };
 
 /**
@@ -52,7 +52,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   conversationId: string;
   notebookName: string;
   notebookPath: string;
-  onImage?: DisplayCallback;
+  onDisplayData?: DisplayCallback;
 
   contentsManager: ContentsManager;
   sessionManager: SessionManager;
@@ -61,7 +61,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
    * Constructs a new CodeInterpreter Tool for a particular user and their conversation.
    * @param interpreterOptions The options for the interpreter.
    */
-  constructor({ userId, conversationId, useHub, onImage }: CodeInterpreterOptions) {
+  constructor({ userId, conversationId, useHub, onDisplayData }: CodeInterpreterOptions) {
     super();
 
     this.schema = codeInterpreterSchema;
@@ -81,7 +81,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.notebookPath = posix.join(userId, this.notebookName);
 
     // A callback to be invoked whenever an figure is generated.
-    this.onImage = onImage;
+    this.onDisplayData = onDisplayData;
 
     // Create Jupyter Hub or server settings.
     const serverSettings = useHub ? createServerSettingsForUser(userId) : createServerSettings();
@@ -91,10 +91,10 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.sessionManager = sessionManager;
   }
 
-  onDisplayData(figureName: string, base64ImageData: string): string {
+  handleDisplayData(figureName: string, base64ImageData: string): string {
     let result = 'An image has been generated and displayed to the user.';
-    if (this.onImage !== undefined) {
-      result = this.onImage(figureName, base64ImageData);
+    if (this.onDisplayData !== undefined) {
+      result = this.onDisplayData(figureName, base64ImageData);
     }
     return result;
   }
@@ -137,7 +137,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
       const [stdOut, stdErr, outputs, executionCount] = await executeCode(
         session,
         code,
-        this.onDisplayData,
+        this.handleDisplayData,
       );
 
       // Add the code and result to the notebook.

@@ -49,7 +49,12 @@ const memory = new BufferMemory({
 
 // Define our tools, including our Code Interpreter.
 const tools: StructuredTool[] = [
-  new CodeInterpreter({ userId: 'user', conversationId: randomUUID(), onImage: saveImage }),
+  new CodeInterpreter({
+    useHub: false,
+    userId: 'user',
+    conversationId: randomUUID(),
+    onDisplayData: saveImage,
+  }),
 ];
 
 /**
