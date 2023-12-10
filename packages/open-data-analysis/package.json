@@ -17,15 +17,10 @@
       "import": "./dist/esm/utils/index.js",
       "require": "./dist/cjs/utils/index.cjs"
     },
-    "./tools/HubCodeInterpreter": {
-      "types": "./dist/types/tools/HubCodeInterpreter.d.ts",
-      "import": "./dist/esm/tools/HubCodeInterpreter.js",
-      "require": "./dist/cjs/tools/HubCodeInterpreter.cjs"
-    },
-    "./tools/ServerCodeInterpreter": {
-      "types": "./dist/types/tools/ServerCodeInterpreter.d.ts",
-      "import": "./dist/esm/tools/ServerCodeInterpreter.js",
-      "require": "./dist/cjs/tools/ServerCodeInterpreter.cjs"
+    "./tools/CodeInterpreter": {
+      "types": "./dist/types/tools/CodeInterpreter.d.ts",
+      "import": "./dist/esm/tools/CodeInterpreter.js",
+      "require": "./dist/cjs/tools/CodeInterpreter.cjs"
     }
   },
   "main": "./dist/esm/index.js",

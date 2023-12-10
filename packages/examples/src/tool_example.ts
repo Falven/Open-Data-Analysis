@@ -13,7 +13,7 @@ import {
   ToolsAgentStep,
 } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
-import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
+import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
 import { getDirname } from 'open-data-analysis/utils';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 
