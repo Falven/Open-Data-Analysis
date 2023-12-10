@@ -19,10 +19,11 @@ import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jup
  * Our CodeInterpreter tool options.
  */
 export type CodeInterpreterOptions = {
-  useHub?: boolean;
   userId: string;
   conversationId: string;
+  useHub?: boolean;
   onDisplayData?: DisplayCallback;
+  instructions?: string;
 };
 
 /**
@@ -65,7 +66,13 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
    * Constructs a new CodeInterpreter Tool for a particular user and their conversation.
    * @param interpreterOptions The options for the interpreter.
    */
-  constructor({ userId, conversationId, useHub, onDisplayData }: CodeInterpreterOptions) {
+  constructor({
+    userId,
+    conversationId,
+    useHub,
+    onDisplayData,
+    instructions,
+  }: CodeInterpreterOptions) {
     super();
 
     this.schema = codeInterpreterSchema;
@@ -74,7 +81,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.name = 'code_interpreter';
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model =
-      this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. Do not create markdown links as they will not work. The tool will inform you when an image is displayed to the user.`;
+      this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
+        instructions !== undefined ? `\n\n${instructions}` : ''
+      }`;
 
     // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
     this.userId = userId;
