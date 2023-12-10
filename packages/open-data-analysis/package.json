@@ -8,24 +8,28 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs"
     },
     "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js"
+      "types": "./dist/types/utils/index.d.ts",
+      "import": "./dist/esm/utils/index.js",
+      "require": "./dist/cjs/utils/index.cjs"
     },
     "./tools/HubCodeInterpreter": {
-      "types": "./dist/tools/HubCodeInterpreter.d.ts",
-      "import": "./dist/tools/HubCodeInterpreter.js"
+      "types": "./dist/types/tools/HubCodeInterpreter.d.ts",
+      "import": "./dist/esm/tools/HubCodeInterpreter.js",
+      "require": "./dist/cjs/tools/HubCodeInterpreter.cjs"
     },
     "./tools/ServerCodeInterpreter": {
-      "types": "./dist/tools/ServerCodeInterpreter.d.ts",
-      "import": "./dist/tools/ServerCodeInterpreter.js"
+      "types": "./dist/types/tools/ServerCodeInterpreter.d.ts",
+      "import": "./dist/esm/tools/ServerCodeInterpreter.js",
+      "require": "./dist/cjs/tools/ServerCodeInterpreter.cjs"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "scripts": {
     "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
     "build:cjs": "pnpm ts-node-esm --project tsconfig.json ../../scripts/esbuild.config.ts --lib --cjs",

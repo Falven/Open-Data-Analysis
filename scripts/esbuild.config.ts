@@ -5,14 +5,13 @@ import { ChildProcess, spawn } from 'node:child_process';
 const args = process.argv.slice(2);
 const externalArg = '--external-';
 
-const parseExternals = (args: string[]): string[] => {
-  return args.reduce((acc: string[], arg: string) => {
+const parseExternals = (args: string[]): string[] =>
+  args.reduce((acc: string[], arg: string) => {
     if (arg.startsWith(externalArg)) {
       acc.push(arg.replace(externalArg, ''));
     }
     return acc;
   }, []);
-};
 
 const esmOptions: Partial<BuildOptions> = {
   format: 'esm',
@@ -79,7 +78,7 @@ const __dirname = esbDirname(__filename);`,
 const entryPoints = await glob('src/**/*.ts');
 const libOptions: Partial<BuildOptions> = {
   entryPoints,
-  outdir: 'dist/',
+  outdir: args.includes('--cjs') ? 'dist/cjs/' : 'dist/esm/',
 };
 
 const devOptions: Partial<BuildOptions> = {
