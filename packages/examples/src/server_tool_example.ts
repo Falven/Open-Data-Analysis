@@ -11,7 +11,7 @@ import {
 import { BufferMemory } from 'langchain/memory';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
-import { CodeInterpreter } from 'open-data-analysis/tools/ServerCodeInterpreter';
+import { Python } from 'open-data-analysis/tools/ServerCodeInterpreter';
 import type { AgentInput } from './types.js';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 
@@ -34,9 +34,7 @@ const memory = new BufferMemory({
 });
 
 // Define our tools, including our Code Interpreter.
-const tools: StructuredTool[] = [
-  new CodeInterpreter({ userId: 'user', conversationId: randomUUID() }),
-];
+const tools: StructuredTool[] = [new Python({ userId: 'user', conversationId: randomUUID() })];
 
 /**
  * Enhance our model with openai tools.
