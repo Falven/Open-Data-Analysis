@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { Python } from 'open-data-analysis/tools/ServerCodeInterpreter';
 import type { AgentInput } from './types.js';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
+import { EnhancedOpenAIToolsAgentOutputParser } from './EnhancedOpenAIToolsAgentOutputParser.js';
 
 /**
  * Define our chat model and it's parameters.
@@ -42,7 +43,7 @@ const tools: StructuredTool[] = [new Python({ userId: 'user', conversationId: ra
  * to format our tools into the proper schema for OpenAI.
  */
 const modelWithTools = model.bind({
-  tools: tools.map(formatToOpenAITool),
+  tools: [...tools.map(formatToOpenAITool)],
 });
 
 /**
@@ -75,8 +76,25 @@ const agent = RunnableSequence.from([
   prompt,
   // Invoke the LLM.
   modelWithTools,
+  /**
+   * JSON-escape the function call argument output of the agent.
+   * This is needed because the generated code that the LLM provides
+   * may not be properly escaped and cause errors.
+   * @param output The Message from the agent.
+   * @returns The Message from the agent with properly JSON-escaped function call arguments.
+   */
+  // async (parserInput): Promise<AgentAction | AgentFinish> => {
+  //   if (parserInput instanceof ToolMessage) {
+  //     const functionCall = parserInput.additional_kwargs?.function_call;
+  //     if (functionCall !== undefined) {
+  //       functionCall.arguments = escapeJson(functionCall.arguments);
+  //     }
+  //   }
+  //   return await new OpenAIFunctionsAgentOutputParser().invoke(parserInput);
+  // },
   // Parse the output.
   new OpenAIToolsAgentOutputParser(),
+  // new EnhancedOpenAIToolsAgentOutputParser(tools),
 ]).withConfig({ runName: 'OpenAIToolsAgent' });
 
 const executor = AgentExecutor.fromAgentAndTools({ agent, tools });
