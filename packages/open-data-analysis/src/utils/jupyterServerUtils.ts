@@ -200,8 +200,7 @@ const processMessage = async (
         : typeof imageOutput === 'object'
           ? JSON.stringify(imageOutput)
           : imageOutput;
-      const imageName = msg.content.metadata['image/png'];
-      stdout += onDisplayData('image.png', base64ImageData);
+      stdout += onDisplayData(base64ImageData);
     }
   } else if (isStreamMsg(msg)) {
     stdout += msg.content.text;

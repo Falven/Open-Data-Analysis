@@ -14,7 +14,7 @@ import {
 } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
-import { getDirname } from 'open-data-analysis/utils';
+import { DisplayCallback, getDirname } from 'open-data-analysis/utils';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 
 /**
@@ -22,11 +22,13 @@ import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/o
  * @param imageName The name of the image.
  * @param base64ImageData The base64 encoded image data.
  */
-const saveImage = (imageName: string, base64ImageData: string): string => {
+const saveImage: DisplayCallback = (base64ImageData: string): string | undefined => {
   const imageData = Buffer.from(base64ImageData, 'base64');
+  const imageName = `${randomUUID()}.png`;
   const imagePath = join(getDirname(), '..', '..', '..', 'images', imageName);
   writeFileSync(imagePath, imageData);
-  return `![Generated Image](/images/${imageName})`;
+  // const markdownLink = `![Generated Image](/images/${imageName})`;
+  return undefined;
 };
 
 /**

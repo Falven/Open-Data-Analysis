@@ -15,4 +15,4 @@ export type Managers = {
  * @param base64ImageData The base64 encoded image data.
  * @returns {string} Any content to be appended to the executionResult.
  */
-export type DisplayCallback = (figureName: string, base64ImageData: string) => string;
+export type DisplayCallback = (base64ImageData: string) => string | undefined;

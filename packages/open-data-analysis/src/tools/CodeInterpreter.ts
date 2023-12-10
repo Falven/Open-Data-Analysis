@@ -91,14 +91,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.sessionManager = sessionManager;
   }
 
-  handleDisplayData(figureName: string, base64ImageData: string): string {
-    let result = 'An image has been generated and displayed to the user.';
-    if (this.onDisplayData !== undefined) {
-      result = this.onDisplayData(figureName, base64ImageData);
-    }
-    return result;
-  }
-
   /**
    * This method is called when the tool is invoked.
    * @param arg The code to execute.
@@ -133,11 +125,19 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         this.conversationId,
       );
 
+      const handleDisplayData: DisplayCallback = (base64ImageData: string): string => {
+        let result;
+        if (this.onDisplayData !== undefined) {
+          result = this.onDisplayData(base64ImageData);
+        }
+        return result ?? 'An image has been generated and displayed to the user.';
+      };
+
       // Execute the code and get the result.
-      const [stdOut, stdErr, outputs, executionCount] = await executeCode(
+      const [stdout, stderr, outputs, executionCount] = await executeCode(
         session,
         code,
-        this.handleDisplayData,
+        handleDisplayData,
       );
 
       // Add the code and result to the notebook.
@@ -147,7 +147,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
       await this.contentsManager.save(this.notebookPath, notebookModel);
 
       // Return the result to the Assistant.
-      return JSON.stringify({ stdOut, stdErr });
+      return JSON.stringify({ stdout, stderr });
     } catch (error) {
       console.error(error);
       // Inform the Assistant that an error occurred.
