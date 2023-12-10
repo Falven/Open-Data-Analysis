@@ -112,11 +112,9 @@ const agent = RunnableSequence.from([
    * @returns The Message from the agent with properly JSON-escaped function call arguments.
    */
   async (parserInput): Promise<AgentAction | AgentFinish> => {
-    if (parserInput instanceof FunctionMessage) {
-      const functionCall = parserInput.additional_kwargs?.function_call;
-      if (functionCall !== undefined) {
-        functionCall.arguments = escapeJson(functionCall.arguments);
-      }
+    const functionCall = parserInput.additional_kwargs?.function_call;
+    if (functionCall !== undefined) {
+      functionCall.arguments = escapeJson(functionCall.arguments);
     }
     return await new OpenAIFunctionsAgentOutputParser().invoke(parserInput);
   },
