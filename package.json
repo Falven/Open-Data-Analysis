@@ -13,18 +13,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "dependencies": {
-    "@jupyterlab/nbformat": "4.1.0-alpha.4",
-    "@jupyterlab/services": "^7.0.9",
-    "axios": "^1.6.2",
-    "eventsource": "^2.0.2",
-    "langchain": "^0.0.199",
-    "uuid": "^9.0.1"
-  },
   "devDependencies": {
-    "@types/eventsource": "^1.1.15",
-    "@types/node": "^20.10.1",
-    "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.13.2",
     "@typescript-eslint/parser": "^6.13.2",
     "concurrently": "^8.2.2",

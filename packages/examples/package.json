@@ -14,7 +14,7 @@
     "watch": "pnpm ts-node-esm ../../scripts/esbuild.config.ts --dev --watch"
   },
   "dependencies": {
-    "langchain": "^0.0.199",
+    "langchain": "^0.0.203",
     "open-data-analysis": "workspace:^"
   },
   "devDependencies": {

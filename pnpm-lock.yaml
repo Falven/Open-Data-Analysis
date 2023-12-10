@@ -7,35 +7,7 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@jupyterlab/nbformat':
-        specifier: 4.1.0-alpha.4
-        version: 4.1.0-alpha.4
-      '@jupyterlab/services':
-        specifier: ^7.0.9
-        version: 7.0.9(react@18.2.0)
-      axios:
-        specifier: ^1.6.2
-        version: 1.6.2
-      eventsource:
-        specifier: ^2.0.2
-        version: 2.0.2
-      langchain:
-        specifier: ^0.0.199
-        version: 0.0.199(axios@1.6.2)
-      uuid:
-        specifier: ^9.0.1
-        version: 9.0.1
     devDependencies:
-      '@types/eventsource':
-        specifier: ^1.1.15
-        version: 1.1.15
-      '@types/node':
-        specifier: ^20.10.1
-        version: 20.10.1
-      '@types/uuid':
-        specifier: ^9.0.7
-        version: 9.0.7
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.13.2
         version: 6.13.2(@typescript-eslint/parser@6.13.2)(eslint@8.55.0)(typescript@5.3.2)
@@ -82,8 +54,8 @@ importers:
   packages/examples:
     dependencies:
       langchain:
-        specifier: ^0.0.199
-        version: 0.0.199(axios@1.6.2)
+        specifier: ^0.0.203
+        version: 0.0.203(axios@1.6.2)
       open-data-analysis:
         specifier: workspace:^
         version: link:../open-data-analysis
@@ -125,8 +97,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       langchain:
-        specifier: ^0.0.199
-        version: 0.0.199(axios@1.6.2)
+        specifier: ^0.0.203
+        version: 0.0.203(axios@1.6.2)
       zod:
         specifier: ^3.22.4
         version: 3.22.4
@@ -557,15 +529,15 @@ packages:
       '@lumino/signaling': 2.1.2
     dev: false
 
-  /@langchain/core@0.0.3:
-    resolution: {integrity: sha512-QSSFGdKWS9GB5LAuGpHaitNqpwTNTYlxw2eRsMVuSNdfLHZhuYa73t/yqDbzPBYpBhhOXSOkmQsk2o8+M4BddA==}
+  /@langchain/core@0.0.10:
+    resolution: {integrity: sha512-c+tYcR9RRTPPGBTpgwVrrxWKoz9/mKNBcMST8c4n8tYAiipvMyd77e+CNazY+2KueGioU6SPzJ6+eZPamQAxnw==}
     engines: {node: '>=18'}
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.8
-      langsmith: 0.0.48
+      langsmith: 0.0.49
       p-queue: 6.6.2
       p-retry: 4.6.2
       uuid: 9.0.1
@@ -737,6 +709,7 @@ packages:
 
   /@types/uuid@9.0.7:
     resolution: {integrity: sha512-WUtIVRUZ9i5dYXefDEAI7sh9/O7jGvHg7Df/5O/gtH3Yabe5odI3UWopVR1qbPXQtvOxWu3mM4XxlYeZtMWF4g==}
+    dev: false
 
   /@typescript-eslint/eslint-plugin@6.13.2(@typescript-eslint/parser@6.13.2)(eslint@8.55.0)(typescript@5.3.2):
     resolution: {integrity: sha512-3+9OGAWHhk4O1LlcwLBONbdXsAhLjyCFogJY/cWy2lxdVJ2JrcTF2pTGMaLl2AE7U1l31n8Py4a8bx5DLf/0dQ==}
@@ -2340,8 +2313,8 @@ packages:
       json-buffer: 3.0.1
     dev: true
 
-  /langchain@0.0.199(axios@1.6.2):
-    resolution: {integrity: sha512-EgNhlFUU0FNRWdydQVJUwaYxbsFBLUcbZXxLu1GjVWmfzMNI+rqHDeE9o5VWEPt99oNshhRzacYO26GieoJj0Q==}
+  /langchain@0.0.203(axios@1.6.2):
+    resolution: {integrity: sha512-H41ik99zXVuqe6CqYoySE4p8TpeqB41KTSkHDf5xNBDG7Hvh1Oq1JyWKs4PaxkO04MagXdN21gIGz+E5djsEXA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@aws-crypto/sha256-js': ^5.0.0
@@ -2387,7 +2360,7 @@ packages:
       '@vercel/kv': ^0.2.3
       '@vercel/postgres': ^0.5.0
       '@writerai/writer-sdk': ^0.40.2
-      '@xata.io/client': ^0.25.1
+      '@xata.io/client': ^0.28.0
       '@xenova/transformers': ^2.5.4
       '@zilliz/milvus2-sdk-node': '>=2.2.7'
       apify-client: ^2.7.1
@@ -2650,7 +2623,7 @@ packages:
         optional: true
     dependencies:
       '@anthropic-ai/sdk': 0.9.1
-      '@langchain/core': 0.0.3
+      '@langchain/core': 0.0.10
       axios: 1.6.2
       binary-extensions: 2.2.0
       expr-eval: 2.0.2
@@ -2674,17 +2647,6 @@ packages:
 
   /langchainhub@0.0.6:
     resolution: {integrity: sha512-SW6105T+YP1cTe0yMf//7kyshCgvCTyFBMTgH2H3s9rTAR4e+78DA/BBrUL/Mt4Q5eMWui7iGuAYb3pgGsdQ9w==}
-    dev: false
-
-  /langsmith@0.0.48:
-    resolution: {integrity: sha512-s0hW8iZ90Q9XLTnDK0Pgee245URV3b1cXQjPDj5OKm1+KN7iSK1pKx+4CO7RcFLz58Ixe7Mt+mVcomYqUuryxQ==}
-    hasBin: true
-    dependencies:
-      '@types/uuid': 9.0.7
-      commander: 10.0.1
-      p-queue: 6.6.2
-      p-retry: 4.6.2
-      uuid: 9.0.1
     dev: false
 
   /langsmith@0.0.49:
