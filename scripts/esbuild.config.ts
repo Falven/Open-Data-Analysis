@@ -85,6 +85,7 @@ const devOptions: Partial<BuildOptions> = {
   sourcemap: 'linked',
   sourcesContent: true,
   logLevel: 'info',
+  minify: false,
 };
 
 const prodOptions: Partial<BuildOptions> = {
