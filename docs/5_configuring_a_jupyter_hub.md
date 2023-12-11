@@ -20,13 +20,33 @@ The first step to creating our hub is to create a configuration file that define
 # Available chart versions: https://hub.jupyter.org/helm-chart/
 #
 imagePullSecrets:
-  - name: cr-myacrsecret
+  - name: cr-myacr
 hub:
   services:
     myapi:
       admin: true
       name: myapi
       api_token: mytoken
+    jupyterhub-idle-culler-service:
+      name: jupyterhub-idle-culler-service
+      # admin: true
+      command:
+        - 'python3'
+        - '-m'
+        - 'jupyterhub_idle_culler'
+        - '--timeout=3600' # Cull after 1 hour of inactivity
+        - '--cull-users'
+        - '--api-page-size=200'
+  loadRoles:
+    jupyterhub-idle-culler-role:
+      description: 'Cull idle single-user servers'
+      scopes:
+        - 'list:users'
+        - 'read:users:activity'
+        - 'read:servers'
+        - 'delete:servers'
+        - 'admin:users'
+      services: ['jupyterhub-idle-culler-service']
 singleuser:
   image:
     name: myacr.azurecr.io/interpreter
