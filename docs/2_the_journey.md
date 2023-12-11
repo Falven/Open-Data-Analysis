@@ -105,7 +105,7 @@ This means that we cannot simply undo this training/tuning to make it use tools 
 
 Another promising solution to a the generated files challenge can be found below:
 
-The issue at hand is that GPT, specifically in its trained/tuned code interpretation tasks, has been configured to use `/mnt/data` as its default output directory. As a result, when asked to display images or plots programmatically GPT occasionally will responding with a generated link in a format such as: [Your File](sandbox:/mnt/data/your_file.txt).
+The issue at hand is that GPT, specifically in its trained/tuned code interpretation tasks, has been configured to use `/mnt/data` as its default output directory. As a result, when asked to display images or plots programmatically GPT occasionally will responding with a generated markdown link in a format such as: `[Your File](sandbox:/mnt/data/your_file.txt)`.
 
 The underlying reason for this configuration in GPT is attributed to the use of an Azure File Share. GPT expects it's API to replace `sandbox:/` with the user's server.
 
