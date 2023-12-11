@@ -93,9 +93,6 @@ importers:
       '@jupyterlab/services':
         specifier: ^7.0.9
         version: 7.0.9(react@18.2.0)
-      '@lumino/coreutils':
-        specifier: ^2.1.2
-        version: 2.1.2
       axios:
         specifier: ^1.6.2
         version: 1.6.2

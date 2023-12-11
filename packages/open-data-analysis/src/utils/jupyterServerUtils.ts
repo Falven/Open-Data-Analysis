@@ -24,7 +24,6 @@ import {
   isErrorMsg,
   isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
-import type { PartialJSONObject } from '@lumino/coreutils';
 import { getRequiredEnvVar } from './envUtils.js';
 import { DisplayCallback, ServerManagers } from './jupyterServerTypes.js';
 
@@ -175,7 +174,7 @@ export const getOrCreatePythonSession = async (
  * @param messageData The message data.
  * @returns {string} The parsed text.
  */
-const parseMessageDataToText = (messageData: MultilineString | PartialJSONObject): string =>
+const parseMessageDataToText = (messageData: MultilineString | object): string =>
   Array.isArray(messageData)
     ? messageData.join('')
     : typeof messageData === 'object'
