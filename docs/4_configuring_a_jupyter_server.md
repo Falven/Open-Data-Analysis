@@ -117,7 +117,7 @@ Starting WebSocket: ws://127.0.0.1:8888/api/kernels/ce9fc73f-eb89-4dac-a867-3b88
 Assistant: The code has been executed and it printed: "Hello Jupyter Server!"
 ```
 
-In the Jupyter Lab interface, you'll find a user directory with a notebook containing the executed code and its results.
+If you paste the link from the Jupyter Server output into your browser, in the Jupyter Lab interface, you'll find a user directory with a notebook containing the executed code and its results.
 
 ![Jupyter Lab](../assets/jupyter_lab.png)
 
