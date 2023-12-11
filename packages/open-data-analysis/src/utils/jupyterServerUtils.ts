@@ -14,6 +14,7 @@ import {
   isDisplayDataMsg,
   isStreamMsg,
   isErrorMsg,
+  isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import { randomUUID } from 'node:crypto';
 import { getRequiredEnvVar } from './envUtils.js';
@@ -176,10 +177,12 @@ const processMessage = async (
   outputs: IOutput[],
   onDisplayData?: DisplayCallback,
 ): Promise<[string, string, ExecutionCount]> => {
-  outputs.push({
-    output_type: msg.header.msg_type,
-    ...msg.content,
-  });
+  if (!isStatusMsg(msg)) {
+    outputs.push({
+      output_type: msg.header.msg_type,
+      ...msg.content,
+    });
+  }
 
   let stdout = '';
   let stderr = '';
