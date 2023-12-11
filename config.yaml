@@ -35,6 +35,7 @@ hub:
     myapi:
       description: 'My API'
       scopes: [admin]
+      services: ['myapi']
 imagePullSecrets:
   - name: cr-myacr
 singleuser:
