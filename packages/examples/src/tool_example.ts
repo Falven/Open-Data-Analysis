@@ -1,4 +1,5 @@
-import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
@@ -15,7 +16,7 @@ import {
 import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
-import { DisplayCallback, getDirname } from 'open-data-analysis/utils';
+import type { DisplayCallback } from 'open-data-analysis/utils';
 
 const useHub = true;
 const userId = 'user';
@@ -37,7 +38,7 @@ const conversationId = randomUUID();
 const onDisplayData: DisplayCallback = (base64ImageData: string): string | undefined => {
   const imageData = Buffer.from(base64ImageData, 'base64');
   const imageName = `${randomUUID()}.png`;
-  const imagePath = join(getDirname(), '..', '..', '..', 'images', imageName);
+  const imagePath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'images', imageName);
   writeFileSync(imagePath, imageData);
   // const markdownLink = `![Generated Image](/images/${imageName})`;
   return undefined;
