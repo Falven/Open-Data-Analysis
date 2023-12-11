@@ -81,8 +81,10 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.name = 'code_interpreter';
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model =
-      this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The drive at '/mnt/data' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
-        instructions !== undefined ? `\n\n${instructions}` : ''
+      this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${
+        useHub ? 'data/' : `/${userId}/data/`
+      }' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
+        instructions !== undefined ? `\n\nInstructions: ${instructions}` : ''
       }`;
 
     // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
@@ -166,7 +168,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));
       // Inform the Assistant that an error occurred.
-      return "There was an error executing the user's code. Please inform them to try later.";
+      return "There was an error executing the user's code. Please try again later.";
     }
   }
 }
