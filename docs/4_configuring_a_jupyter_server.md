@@ -64,7 +64,7 @@ docker buildx create --use --platform=linux/amd64 --name jupyter-server-builder
 # Verify the builder instance
 docker buildx inspect jupyter-server-builder --bootstrap
 # Build the container
-docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:latest --load -f ./packages/open-data-analysis/Dockerfile ./packages/open-data-analysis
+docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:latest --load -f ./Dockerfile .
 ```
 
 ## 4.4 Running and testing the container locally:
