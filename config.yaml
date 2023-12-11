@@ -8,11 +8,10 @@
 # Chart default values:     https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/jupyterhub/values.yaml
 # Available chart versions: https://hub.jupyter.org/helm-chart/
 #
-imagePullSecrets:
-  - name: cr-myacr
 hub:
   services:
     myapi:
+      admin: true
       name: myapi
       api_token: mytoken
     jupyterhub-idle-culler-service:
@@ -24,7 +23,6 @@ hub:
         - 'jupyterhub_idle_culler'
         - '--timeout=3600' # Cull after 1 hour of inactivity
         - '--cull-users'
-        - '--remove-named-servers'
         - '--api-page-size=200'
   loadRoles:
     jupyterhub-idle-culler-role:
@@ -39,6 +37,8 @@ hub:
     myapi:
       description: 'My API'
       scopes: [admin]
+imagePullSecrets:
+  - name: cr-myacr
 singleuser:
   image:
     name: myacr.azurecr.io/interpreter
