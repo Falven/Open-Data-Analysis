@@ -27,33 +27,28 @@ import { getRequiredEnvVar } from './envUtils.js';
 import { DisplayCallback, Managers } from './jupyterServerTypes.js';
 import { PartialJSONObject } from '@lumino/coreutils';
 
-const serverUrl = getRequiredEnvVar('JUPYTER_URL');
+const baseUrl = getRequiredEnvVar('JUPYTER_BASE_URL');
+const wsUrl = getRequiredEnvVar('JUPYTER_WS_URL');
 const token = getRequiredEnvVar('JUPYTER_TOKEN');
 
 /**
  * Create settings for a general, single-user Jupyter server.
  * @returns {ServerConnection.ISettings} The server settings.
  */
-export const createServerSettings = (): ServerConnection.ISettings => {
-  return ServerConnection.makeSettings({
-    baseUrl: `http://${serverUrl}`,
-    wsUrl: `ws://${serverUrl}`,
-    token,
-  });
-};
+export const createServerSettings = (): ServerConnection.ISettings =>
+  ServerConnection.makeSettings({ baseUrl, wsUrl, token });
 
 /**
  * Create settings for a Jupyter server for a specific user.
  * @param username The username of the user.
  * @returns {ServerConnection.ISettings} The server settings.
  */
-export const createServerSettingsForUser = (username: string): ServerConnection.ISettings => {
-  return ServerConnection.makeSettings({
-    baseUrl: `http://${serverUrl}/user/${username}`,
-    wsUrl: `ws://${serverUrl}/user/${username}`,
+export const createServerSettingsForUser = (username: string): ServerConnection.ISettings =>
+  ServerConnection.makeSettings({
+    baseUrl: `${baseUrl}/user/${username}`,
+    wsUrl: `${wsUrl}/user/${username}`,
     token,
   });
-};
 
 /**
  * Create managers to interact with the Jupyter server.

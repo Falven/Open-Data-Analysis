@@ -3,8 +3,8 @@ import EventSource from 'eventsource';
 import { getRequiredEnvVar } from './envUtils.js';
 import { JupyterHubUser, ProgressEvent } from './jupyterHubTypes.js';
 
-const jupyterHubUrl = getRequiredEnvVar('JUPYTER_URL');
-const jupyterHubToken = getRequiredEnvVar('JUPYTER_TOKEN');
+const baseUrl = getRequiredEnvVar('JUPYTER_BASE_URL');
+const token = getRequiredEnvVar('JUPYTER_TOKEN');
 
 /**
  * Starts a single-user notebook server for the specified user.
@@ -15,9 +15,9 @@ const jupyterHubToken = getRequiredEnvVar('JUPYTER_TOKEN');
 export const startServerForUser = async (username: string): Promise<ProgressEvent> => {
   try {
     const response = await axios.post(
-      `http://${jupyterHubUrl}/hub/api/users/${username}/server`,
+      `${baseUrl}/hub/api/users/${username}/server`,
       {},
-      { headers: { Authorization: `token ${jupyterHubToken}` } },
+      { headers: { Authorization: `token ${token}` } },
     );
 
     if (response.status === 201) {
@@ -42,12 +42,9 @@ export const startServerForUser = async (username: string): Promise<ProgressEven
  * @returns A Promise that resolves to the user data.
  */
 export const getUser = async (username: string): Promise<JupyterHubUser> => {
-  const response = await axios.get<JupyterHubUser>(
-    `http://${jupyterHubUrl}/hub/api/users/${username}`,
-    {
-      headers: { Authorization: `token ${jupyterHubToken}` },
-    },
-  );
+  const response = await axios.get<JupyterHubUser>(`${baseUrl}/hub/api/users/${username}`, {
+    headers: { Authorization: `token ${token}` },
+  });
   if (response.status !== 200) {
     throw new Error(`Failed to get user ${username}.`);
   }
@@ -61,10 +58,10 @@ export const getUser = async (username: string): Promise<JupyterHubUser> => {
  */
 export const createUser = async (username: string): Promise<JupyterHubUser> => {
   const response = await axios.post(
-    `http://${jupyterHubUrl}/hub/api/users/${username}`,
+    `${baseUrl}/hub/api/users/${username}`,
     {},
     {
-      headers: { Authorization: `token ${jupyterHubToken}` },
+      headers: { Authorization: `token ${token}` },
     },
   );
   if (response.status !== 201) {
@@ -97,9 +94,9 @@ export const serverStartup = async (
   onError?: (error: MessageEvent) => void,
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const url = `http://${jupyterHubUrl}/hub/api/users/${username}/server/progress`;
+    const url = `${baseUrl}/hub/api/users/${username}/server/progress`;
     const eventSource = new EventSource(url, {
-      headers: { Authorization: `token ${jupyterHubToken}` },
+      headers: { Authorization: `token ${token}` },
     });
 
     eventSource.onmessage = (event: MessageEvent) => {
