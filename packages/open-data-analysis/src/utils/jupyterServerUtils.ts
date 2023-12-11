@@ -174,7 +174,7 @@ export const getOrCreatePythonSession = async (
   );
 };
 
-const parseMessageContentToText = (messageContent: MultilineString | PartialJSONObject): string =>
+const parseMessageDataToText = (messageContent: MultilineString | PartialJSONObject): string =>
   Array.isArray(messageContent)
     ? messageContent.join('')
     : typeof messageContent === 'object'
@@ -200,12 +200,12 @@ const processMessage = async (
   let execution_count: ExecutionCount = null;
   if (isExecuteResultMsg(msg)) {
     const textData = msg.content.data['text/plain'];
-    stdout += parseMessageContentToText(textData);
+    stdout += parseMessageDataToText(textData);
     execution_count = msg.content.execution_count;
   } else if (isDisplayDataMsg(msg)) {
     if (onDisplayData !== undefined) {
-      const imageOutput = msg.content.data['image/png'];
-      const base64ImageData = parseMessageContentToText(imageOutput);
+      const imageData = msg.content.data['image/png'];
+      const base64ImageData = parseMessageDataToText(imageData);
       stdout += onDisplayData(base64ImageData);
     }
   } else if (isStreamMsg(msg)) {
