@@ -13,7 +13,6 @@ imagePullSecrets:
 hub:
   services:
     myapi:
-      admin: true
       name: myapi
       api_token: mytoken
     jupyterhub-idle-culler-service:
@@ -37,6 +36,9 @@ hub:
         - 'delete:servers'
         - 'admin:users'
       services: ['jupyterhub-idle-culler-service']
+    myapi:
+      description: 'My API'
+      scopes: [admin]
 singleuser:
   image:
     name: myacr.azurecr.io/interpreter
