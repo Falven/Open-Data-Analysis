@@ -266,3 +266,12 @@ At this point, again, I recommend you refer to the annotated code in `src/hub_to
 ## 5.5 Managing user servers
 
 > [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idle-culler) provides a JupyterHub service to identify and stop idle or long-running Jupyter servers via JupyterHub. It works solely by interacting with JupyterHub's REST API, and is often configured to run as a JupyterHub managed service started up by JupyterHub itself.
+
+You can check if the jupyterhub-idle-culler service is running by running the following commands:
+
+```shell
+# Get running pods, note the hub pod name.
+kubectl get pods
+# Get the logs of the hub pod
+kubectl logs hub-...
+```
