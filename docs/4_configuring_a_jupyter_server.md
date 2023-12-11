@@ -77,12 +77,14 @@ This doumentation uses [LangChain JS](https://js.langchain.com/) and [Azure Open
 Create a `.env` file in the 'examples' package with the following variables:
 
 ```env
-JUPYTER_URL=127.0.0.1:8888
+JUPYTER_BASE_URL=http://127.0.0.1:8888
+JUPYTER_WS_URL=ws://127.0.0.1:8888
 JUPYTER_TOKEN=
 AZURE_OPENAI_API_KEY=
 AZURE_OPENAI_API_INSTANCE_NAME=
 AZURE_OPENAI_API_DEPLOYMENT_NAME=
-AZURE_OPENAI_API_VERSION=2023-08-01-preview
+AZURE_OPENAI_API_VERSION=2023-09-01-preview
+
 ```
 
 This example uses `pnpm`, which can be easily enabled or installed [using corepack](https://pnpm.io/installation#using-corepack).
