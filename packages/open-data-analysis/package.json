@@ -35,6 +35,7 @@
   "dependencies": {
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
+    "@lumino/coreutils": "^2.1.2",
     "axios": "^1.6.2",
     "eventsource": "^2.0.2",
     "langchain": "^0.0.203",

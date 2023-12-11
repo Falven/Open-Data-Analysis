@@ -5,7 +5,13 @@ import {
   SessionManager,
   ContentsManager,
 } from '@jupyterlab/services';
-import { ExecutionCount, IDisplayData, INotebookContent, IOutput } from '@jupyterlab/nbformat';
+import {
+  ExecutionCount,
+  IDisplayData,
+  INotebookContent,
+  IOutput,
+  MultilineString,
+} from '@jupyterlab/nbformat';
 import type { Contents, Session } from '@jupyterlab/services';
 import {
   isExecuteResultMsg,
@@ -19,6 +25,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { getRequiredEnvVar } from './envUtils.js';
 import { DisplayCallback, Managers } from './jupyterServerTypes.js';
+import { PartialJSONObject } from '@lumino/coreutils';
 
 const serverUrl = getRequiredEnvVar('JUPYTER_URL');
 const token = getRequiredEnvVar('JUPYTER_TOKEN');
@@ -167,6 +174,13 @@ export const getOrCreatePythonSession = async (
   );
 };
 
+const parseMessageContentToText = (messageContent: MultilineString | PartialJSONObject): string =>
+  Array.isArray(messageContent)
+    ? messageContent.join('')
+    : typeof messageContent === 'object'
+      ? JSON.stringify(messageContent)
+      : messageContent;
+
 /**
  * Processes a message from the Jupyter kernel and returns a list of outputs and the final result.
  * @param {IIOPubMessage<IOPubMessageType>} msg The message from the Jupyter kernel.
@@ -185,25 +199,21 @@ const processMessage = async (
   let stderr = '';
   let execution_count: ExecutionCount = null;
   if (isExecuteResultMsg(msg)) {
-    const textOutput = msg.content.data['text/plain'];
-    stdout += Array.isArray(textOutput)
-      ? textOutput.join('\n')
-      : typeof textOutput === 'object'
-        ? JSON.stringify(textOutput)
-        : textOutput;
+    const textData = msg.content.data['text/plain'];
+    stdout += parseMessageContentToText(textData);
     execution_count = msg.content.execution_count;
   } else if (isDisplayDataMsg(msg)) {
     if (onDisplayData !== undefined) {
       const imageOutput = msg.content.data['image/png'];
-      const base64ImageData = Array.isArray(imageOutput)
-        ? imageOutput.join('')
-        : typeof imageOutput === 'object'
-          ? JSON.stringify(imageOutput)
-          : imageOutput;
+      const base64ImageData = parseMessageContentToText(imageOutput);
       stdout += onDisplayData(base64ImageData);
     }
   } else if (isStreamMsg(msg)) {
-    stdout += msg.content.text;
+    if (msg.content.name === 'stdout') {
+      stdout += msg.content.text;
+    } else {
+      stderr += msg.content.text;
+    }
   } else if (isErrorMsg(msg)) {
     stderr += msg.content.traceback.join('\n');
   }
