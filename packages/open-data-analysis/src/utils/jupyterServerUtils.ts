@@ -26,7 +26,7 @@ import {
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import type { PartialJSONObject } from '@lumino/coreutils';
 import { getRequiredEnvVar } from './envUtils.js';
-import { DisplayCallback, Managers } from './jupyterServerTypes.js';
+import { DisplayCallback, ServerManagers } from './jupyterServerTypes.js';
 
 const baseUrl = getRequiredEnvVar('JUPYTER_BASE_URL');
 const wsUrl = getRequiredEnvVar('JUPYTER_WS_URL');
@@ -54,9 +54,9 @@ export const createServerSettingsForUser = (username: string): ServerConnection.
 /**
  * Create managers to interact with the Jupyter server.
  * @param serverSettings The server settings.
- * @returns {Managers} The managers.
+ * @returns {ServerManagers} The managers.
  */
-export const initializeManagers = (serverSettings: ServerConnection.ISettings): Managers => {
+export const initializeManagers = (serverSettings: ServerConnection.ISettings): ServerManagers => {
   const kernelManager = new KernelManager({ serverSettings });
   const sessionManager = new SessionManager({ serverSettings, kernelManager });
   const contentsManager = new ContentsManager({ serverSettings });

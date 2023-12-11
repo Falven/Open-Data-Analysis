@@ -3,7 +3,7 @@ import { KernelManager, SessionManager, ContentsManager } from '@jupyterlab/serv
 /**
  * Managers for the Jupyter server.
  */
-export type Managers = {
+export type ServerManagers = {
   kernelManager: KernelManager;
   sessionManager: SessionManager;
   contentsManager: ContentsManager;
