@@ -110,11 +110,20 @@ NSG_NAME=$(
 
 # Add our IP to the Network Security group to allow us to access our JupyterHub instance.
 az network nsg rule create --resource-group my-rg-name \
-   --nsg-name vnet-dev-eastus-001-snet-dev-eastus-001-nsg-eastus \
+   --nsg-name my-nsg-name \
    --name "AllowMyIPHttpInbound" \
-   --priority 100 \
+   --priority 200 \
    --source-address-prefixes "$(curl ifconfig.me)/32" \
    --destination-port-ranges 80 \
+   --access Allow \
+   --protocol TCP \
+   --description "Allow my IP"
+az network nsg rule create --resource-group my-rg-name \
+   --nsg-name my-nsg-name \
+   --name "AllowMyIPHttpsInbound" \
+   --priority 100 \
+   --source-address-prefixes "$(curl ifconfig.me)/32" \
+   --destination-port-ranges 443 \
    --access Allow \
    --protocol TCP \
    --description "Allow my IP"
