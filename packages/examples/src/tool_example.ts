@@ -23,11 +23,8 @@ const userId = 'fran';
 const conversationId = randomUUID();
 
 /**
- * Convert [My File](sandbox:/mnt/data/my_file.txt)
- * to
- * [My File](http://127.0.0.1:8888/files/user/mnt/data/my_file.txt?token=...)
- *
- * Address token security
+ * TODO: Address token security.
+ * TODO: File upload example.
  */
 
 /**

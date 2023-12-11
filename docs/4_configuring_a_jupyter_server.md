@@ -101,7 +101,13 @@ pnpm install
 pnpm --filter examples... build
 ```
 
-To run the example, use the `launch.json` configurations in VSCode (F5 or play) or execute `pnpm --filter examples run start`.
+Make sure that
+
+```ts
+const useHub = false;
+```
+
+In the example since we will be running a single user server in this example. Then, to run the example, use the `launch.json` configurations in VSCode (F5 or play) or execute `pnpm --filter examples run start`.
 
 Interacting with the assistant should now execute code on the Jupyter Server:
 
