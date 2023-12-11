@@ -11,12 +11,10 @@
 hub:
   services:
     myapi:
-      admin: true
       name: myapi
       api_token: mytoken
     jupyterhub-idle-culler-service:
       name: jupyterhub-idle-culler-service
-      # admin: true
       command:
         - 'python3'
         - '-m'
