@@ -26,16 +26,16 @@ hub:
         - '--timeout=3600' # Cull after 1 hour of inactivity
         - '--cull-users'
         - '--api-page-size=200'
-loadRoles:
-  - name: 'jupyterhub-idle-culler-role'
-    description: 'Cull idle single-user servers'
-    scopes:
-      - 'list:users'
-      - 'read:users:activity'
-      - 'read:servers'
-      - 'delete:servers'
-      - 'admin:users'
-    services: ['jupyterhub-idle-culler-service']
+  loadRoles:
+    - name: 'jupyterhub-idle-culler-role'
+      description: 'Cull idle single-user servers'
+      scopes:
+        - 'list:users'
+        - 'read:users:activity'
+        - 'read:servers'
+        - 'delete:servers'
+        - 'admin:users'
+      services: ['jupyterhub-idle-culler-service']
 singleuser:
   image:
     name: myacr.azurecr.io/interpreter
