@@ -1,31 +1,32 @@
 import { posix } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import {
   ServerConnection,
   KernelManager,
   SessionManager,
   ContentsManager,
+  Contents,
+  Session,
 } from '@jupyterlab/services';
-import {
+import type {
   ExecutionCount,
   IDisplayData,
   INotebookContent,
   IOutput,
   MultilineString,
 } from '@jupyterlab/nbformat';
-import type { Contents, Session } from '@jupyterlab/services';
 import {
   isExecuteResultMsg,
-  type IIOPubMessage,
-  type IOPubMessageType,
+  IIOPubMessage,
+  IOPubMessageType,
   isDisplayDataMsg,
   isStreamMsg,
   isErrorMsg,
   isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
-import { randomUUID } from 'node:crypto';
+import type { PartialJSONObject } from '@lumino/coreutils';
 import { getRequiredEnvVar } from './envUtils.js';
 import { DisplayCallback, Managers } from './jupyterServerTypes.js';
-import { PartialJSONObject } from '@lumino/coreutils';
 
 const baseUrl = getRequiredEnvVar('JUPYTER_BASE_URL');
 const wsUrl = getRequiredEnvVar('JUPYTER_WS_URL');
