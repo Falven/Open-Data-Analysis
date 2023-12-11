@@ -217,11 +217,14 @@ helm upgrade --cleanup-on-fail \
 kubectl config use-context my-aks-name
 
 # Create our image pulling credentials
-kubectl create secret docker-registry cr-myacrsecret \
+kubectl create secret docker-registry cr-myacr \
    --docker-server=myacr.azurecr.io \
    --docker-username=$SP_ID \
    --docker-password=$SP_PASSWD \
    --namespace my-aks-name
+
+# Check our secrets
+kubectl get secrets
 
 # Ensure our pods are running.
 kubectl get pod --namespace my-aks-name
@@ -236,6 +239,8 @@ docker inspect myacr.azurecr.io/interpreter:latest | grep Architecture
 # Find the public IP of our proxy to access our hub
 kubectl --namespace my-aks-name get service proxy-public
 ```
+
+If you lose your `config.yaml`, you can use `helm list -A` to see all the helm releases in your cluster and `helm get values [RELEASE_NAME] --revision [REVISION_NUMBER]` to get the configuration values for a specific release.
 
 ## 5.4 Running the hub example
 
