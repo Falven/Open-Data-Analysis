@@ -16,7 +16,7 @@ import {
 import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
-import type { DisplayCallback } from 'open-data-analysis/utils';
+import { transformSandboxPathsToJupyterUrls, DisplayCallback } from 'open-data-analysis/utils';
 
 const useHub = true;
 const userId = 'fran';
@@ -38,7 +38,14 @@ const conversationId = randomUUID();
 const onDisplayData: DisplayCallback = (base64ImageData: string): string | undefined => {
   const imageData = Buffer.from(base64ImageData, 'base64');
   const imageName = `${randomUUID()}.png`;
-  const imagePath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'images', imageName);
+  const imagePath = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '..',
+    '..',
+    '..',
+    'images',
+    imageName,
+  );
   writeFileSync(imagePath, imageData);
   // const markdownLink = `![Generated Image](/images/${imageName})`;
   return undefined;
@@ -141,14 +148,16 @@ const chatLoop = async () => {
 
   rl.on('SIGINT', exit);
 
-  rl.on('line', async (line: string) => {
-    if (line.trim() === '.exit') {
+  rl.on('line', async (input: string) => {
+    if (input.trim() === '.exit') {
       exit();
     } else {
       try {
-        const result = await executor.invoke({ input: line });
-        console.log(`Assistant: ${result.output}`);
-        await memory.saveContext({ input: line }, { output: result.output });
+        const result = await executor.invoke({ input });
+        // TODO: only if tool ran.
+        const output = transformSandboxPathsToJupyterUrls(result.output, userId);
+        console.log(`Assistant: ${output}`);
+        await memory.saveContext({ input }, { output });
       } catch (error) {
         console.error(error);
       }

@@ -1,10 +1,10 @@
 import axios from 'axios';
 import EventSource from 'eventsource';
-import { getRequiredEnvVar } from './envUtils.js';
+import { getEnvOrThrow } from './envUtils.js';
 import { JupyterHubUser, ProgressEvent } from './jupyterHubTypes.js';
 
-const baseURL = getRequiredEnvVar('JUPYTER_BASE_URL');
-const token = getRequiredEnvVar('JUPYTER_TOKEN');
+const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const token = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
  * Create an axios instance for the JupyterHub API.

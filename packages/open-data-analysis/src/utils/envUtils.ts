@@ -3,7 +3,7 @@
  * @param varName The name of the environment variable.
  * @returns {string} The value of the environment variable.
  */
-export const getRequiredEnvVar = (varName: string): string => {
+export const getEnvOrThrow = (varName: string): string => {
   const value = process.env[varName];
   if (!value) {
     throw new Error(`Missing ${varName} environment variable.`);

@@ -13,6 +13,7 @@ import {
 } from '../utils/jupyterServerUtils.js';
 import { DisplayCallback } from '../utils/jupyterServerTypes.js';
 import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils.js';
+import { replaceSandboxProtocolWithDirectory } from '../utils/sandboxUtils.js';
 
 export type CodeInterpreterOptions = {
   /**
@@ -53,10 +54,13 @@ type CodeInterpreterZodSchema = typeof codeInterpreterSchema;
  * A simple example on how to use Jupyter server as a code interpreter.
  */
 export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
+  static sandboxProtocol: string = 'sandbox:/';
+
   userId: string;
   conversationId: string;
   useHub?: boolean;
   onDisplayData?: DisplayCallback;
+  sandboxDirectory: string;
 
   schema: CodeInterpreterZodSchema;
   name: string;
@@ -87,23 +91,22 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.conversationId = conversationId;
     this.useHub = useHub;
     this.onDisplayData = onDisplayData;
+    // TODO: Validate userId
+    this.sandboxDirectory = this.useHub ? '' : this.userId;
 
     this.schema = codeInterpreterSchema;
-    // OpenAI functions additionally use the Tool name to gain insigths into using it.
+    // OpenAI functions use the Tool name to gain additional insigths.
     this.name = 'code_interpreter';
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model =
       this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${
-        this.useHub ? 'data/' : `/${this.userId}/data/`
+        CodeInterpreter.sandboxProtocol
       }' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
-        instructions !== undefined ? `\n\nInstructions: ${instructions}` : ''
+        instructions !== undefined ? `\n\nAdditional Instructions: ${instructions}` : ''
       }`;
 
     this.notebookName = `${this.conversationId}.ipynb`;
-    // The notebook path should be under the user's directory for single-server (non-hub) operation.
-    this.notebookPath = this.useHub
-      ? this.notebookName
-      : posix.join(this.userId, this.notebookName);
+    this.notebookPath = posix.join(this.sandboxDirectory, this.notebookName);
   }
 
   /**
@@ -115,10 +118,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     if (code === undefined) {
       return renderTextDescriptionAndArgs([this]);
     }
-
-    /**
-     * Replace sandbox:/ in input code with the user's data directory.
-     */
 
     try {
       if (this.useHub) {
@@ -161,23 +160,26 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         return result ?? 'An image has been generated and displayed to the user.';
       };
 
+      // Replace any sandbox protocols with the actual directory.
+      const processedCode = replaceSandboxProtocolWithDirectory(code, this.sandboxDirectory);
+
       // Execute the code and get the result.
       const [stdout, stderr, outputs, executionCount] = await executeCode(
         session,
-        code,
+        processedCode,
         handleDisplayData,
       );
 
       // Add the code and result to the notebook.
-      addCellsToNotebook(notebookModel, code, outputs, executionCount);
+      addCellsToNotebook(notebookModel, processedCode, outputs, executionCount);
 
       // Save the notebook.
       await contentsManager.save(this.notebookPath, notebookModel);
 
       return JSON.stringify({ stdout, stderr });
     } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      // Inform the Assistant that an error occurred.
+      console.error(error);
+      // Inform the Assistant that a tool invocation error has occurred.
       return "There was an error executing the user's code. Please try again later.";
     }
   }

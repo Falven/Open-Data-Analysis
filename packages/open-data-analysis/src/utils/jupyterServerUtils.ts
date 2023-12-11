@@ -24,19 +24,19 @@ import {
   isErrorMsg,
   isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
-import { getRequiredEnvVar } from './envUtils.js';
+import { getEnvOrThrow } from './envUtils.js';
 import { DisplayCallback, ServerManagers } from './jupyterServerTypes.js';
 
-const baseUrl = getRequiredEnvVar('JUPYTER_BASE_URL');
-const wsUrl = getRequiredEnvVar('JUPYTER_WS_URL');
-const token = getRequiredEnvVar('JUPYTER_TOKEN');
+const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const wsURL = getEnvOrThrow('JUPYTER_WS_URL');
+const token = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
  * Create settings for a general, single-user Jupyter server.
  * @returns {ServerConnection.ISettings} The server settings.
  */
 export const createServerSettings = (): ServerConnection.ISettings =>
-  ServerConnection.makeSettings({ baseUrl, wsUrl, token });
+  ServerConnection.makeSettings({ baseUrl: baseURL, wsUrl: wsURL, token });
 
 /**
  * Create settings for a Jupyter server for a specific user.
@@ -45,8 +45,8 @@ export const createServerSettings = (): ServerConnection.ISettings =>
  */
 export const createServerSettingsForUser = (username: string): ServerConnection.ISettings =>
   ServerConnection.makeSettings({
-    baseUrl: `${baseUrl}/user/${username}`,
-    wsUrl: `${wsUrl}/user/${username}`,
+    baseUrl: `${baseURL}/user/${username}`,
+    wsUrl: `${wsURL}/user/${username}`,
     token,
   });
 
@@ -55,7 +55,9 @@ export const createServerSettingsForUser = (username: string): ServerConnection.
  * @param serverSettings The server settings.
  * @returns {ServerManagers} The managers.
  */
-export const initializeServerManagers = (serverSettings: ServerConnection.ISettings): ServerManagers => {
+export const initializeServerManagers = (
+  serverSettings: ServerConnection.ISettings,
+): ServerManagers => {
   const kernelManager = new KernelManager({ serverSettings });
   const sessionManager = new SessionManager({ serverSettings, kernelManager });
   const contentsManager = new ContentsManager({ serverSettings });
@@ -63,27 +65,43 @@ export const initializeServerManagers = (serverSettings: ServerConnection.ISetti
 };
 
 /**
- * Iterates the Jupyter Server directories, creating missing directories to form the structure denoted by path.
+ * Creates a directory structure based on a given relative path within the Jupyter Server.
+ * The path is relative to the user's home directory in the Jupyter Server.
  * @param contentsManager The contents manager used to create the directory structure.
- * @param path A POSIX path to of directories to create.
+ * @param jupyterRelativePath The relative path of directories to create, within the Jupyter Server.
  */
-const createDirectoryStructure = async (
+const createDirectoryStructureWithinJupyter = async (
   contentsManager: ContentsManager,
-  path: string,
+  jupyterRelativePath: string,
 ): Promise<void> => {
-  let currentPath: string = posix.sep;
-  const directories = path.split(posix.sep);
+  // Normalize the path to resolve '.' and '..' using POSIX standards
+  const normalizedPath = posix.normalize(jupyterRelativePath);
+
+  // Split the path into directories, filtering out null, undefined, and empty strings
+  const directories = normalizedPath
+    .split(posix.sep)
+    .filter((dir) => dir != null && dir !== '' && dir !== '.' && dir !== '..');
+
+  // Start from the root directory (interpreted as user's home directory in Jupyter Server)
+  let currentPath: string = '';
+
   for (const directory of directories) {
+    // Construct the path for the current directory
+    currentPath = posix.join(currentPath, directory);
+
+    // Check if the directory exists
     const model = await contentsManager.get(currentPath);
     if (
       !(model.content as Contents.IModel[]).find(
         (content: Contents.IModel) => content.name === directory && content.type === 'directory',
       )
     ) {
-      await contentsManager.newUntitled({ type: 'directory' });
-      await contentsManager.rename('Untitled Folder', directory);
+      // Directory does not exist, create an 'Untitled' directory first
+      const newDir = await contentsManager.newUntitled({ path: currentPath, type: 'directory' });
+
+      // Then rename the 'Untitled' directory to the desired name
+      await contentsManager.rename(newDir.path, currentPath);
     }
-    currentPath = posix.join(currentPath, directory);
   }
 };
 
@@ -121,7 +139,7 @@ export const getOrCreateNotebook = async (
   notebookPath: string,
 ): Promise<Contents.IModel> => {
   const dirname = posix.dirname(notebookPath);
-  await createDirectoryStructure(contentsManager, dirname);
+  await createDirectoryStructureWithinJupyter(contentsManager, dirname);
 
   let model: Contents.IModel;
   const name = posix.basename(notebookPath);
