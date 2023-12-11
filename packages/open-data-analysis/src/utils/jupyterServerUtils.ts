@@ -174,12 +174,12 @@ export const getOrCreatePythonSession = async (
   );
 };
 
-const parseMessageDataToText = (messageContent: MultilineString | PartialJSONObject): string =>
-  Array.isArray(messageContent)
-    ? messageContent.join('')
-    : typeof messageContent === 'object'
-      ? JSON.stringify(messageContent)
-      : messageContent;
+const parseMessageDataToText = (messageData: MultilineString | PartialJSONObject): string =>
+  Array.isArray(messageData)
+    ? messageData.join('')
+    : typeof messageData === 'object'
+      ? JSON.stringify(messageData)
+      : messageData;
 
 /**
  * Processes a message from the Jupyter kernel and returns a list of outputs and the final result.
