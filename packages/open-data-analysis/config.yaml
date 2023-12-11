@@ -27,7 +27,7 @@ hub:
         - '--cull-users'
         - '--api-page-size=200'
   loadRoles:
-    - name: 'jupyterhub-idle-culler-role'
+    jupyterhub-idle-culler-role:
       description: 'Cull idle single-user servers'
       scopes:
         - 'list:users'
