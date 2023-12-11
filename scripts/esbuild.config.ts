@@ -60,7 +60,7 @@ const onEndPlugin: Plugin = {
 const plugins: Plugin[] = [dynamicNodeNativeModulePlugin];
 
 const appOptions: Partial<BuildOptions> = {
-  entryPoints: ['src/server_tool_example.ts', 'src/hub_tool_example.ts'],
+  entryPoints: ['src/tool_example.ts'],
   outdir: 'dist/',
   bundle: false,
   plugins,

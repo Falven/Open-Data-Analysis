@@ -9,7 +9,7 @@
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/examples",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "examples", "run", "start"],
+      "runtimeArgs": ["--filter", "examples", "run", "dev"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std",
