@@ -98,10 +98,10 @@ Install dependencies and build the package:
 
 ```shell
 pnpm install
-pnpm --filter open-data-analysis build
+pnpm --filter examples... build
 ```
 
-To run the example, use the `launch.json` configurations in VSCode (F5 or play) or execute `pnpm run start:server`.
+To run the example, use the `launch.json` configurations in VSCode (F5 or play) or execute `pnpm --filter examples run start`.
 
 Interacting with the assistant should now execute code on the Jupyter Server:
 
