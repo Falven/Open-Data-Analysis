@@ -19,7 +19,7 @@ import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
 import type { DisplayCallback } from 'open-data-analysis/utils';
 
 const useHub = true;
-const userId = 'user';
+const userId = 'fran';
 const conversationId = randomUUID();
 
 /**

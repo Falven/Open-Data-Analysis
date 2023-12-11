@@ -9,12 +9,11 @@
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/examples",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "examples", "run", "dev"],
+      "runtimeArgs": ["--filter", "examples", "run", "start"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "outputCapture": "std",
-      "console": "integratedTerminal",
-      "preLaunchTask": "npm: build:dev - packages/open-data-analysis"
+      "console": "integratedTerminal"
     }
   ]
 }

@@ -4,6 +4,19 @@
     {
       "type": "npm",
       "script": "build:dev",
+      "path": "packages/examples",
+      "group": {
+        "kind": "build"
+      },
+      "problemMatcher": [],
+      "label": "npm: build:dev - packages/examples",
+      "dependsOn": [
+        "npm: build:dev - packages/open-data-analysis"
+      ]
+    },
+    {
+      "type": "npm",
+      "script": "build:dev",
       "path": "packages/open-data-analysis",
       "group": {
         "kind": "build"

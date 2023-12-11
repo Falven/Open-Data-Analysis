@@ -1,7 +1,6 @@
 import { posix } from 'node:path';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
-import { ContentsManager, SessionManager } from '@jupyterlab/services';
 import { z } from 'zod';
 import {
   addCellsToNotebook,
@@ -55,9 +54,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   notebookPath: string;
   onDisplayData?: DisplayCallback;
 
-  contentsManager: ContentsManager;
-  sessionManager: SessionManager;
-
   static lc_name() {
     return 'CodeInterpreter';
   }
@@ -99,13 +95,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
 
     // A callback to be invoked whenever an figure is generated.
     this.onDisplayData = onDisplayData;
-
-    // Create Jupyter Hub or server settings.
-    const serverSettings = useHub ? createServerSettingsForUser(userId) : createServerSettings();
-
-    const { contentsManager, sessionManager } = initializeManagers(serverSettings);
-    this.contentsManager = contentsManager;
-    this.sessionManager = sessionManager;
   }
 
   /**
@@ -131,12 +120,16 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         }
       }
 
+      // Create Jupyter Hub or server settings.
+      const serverSettings = this.useHub ? createServerSettingsForUser(this.userId) : createServerSettings();
+      const { contentsManager, sessionManager } = initializeManagers(serverSettings);
+
       // Get or Create the notebook if it doesn't exist.
-      const notebookModel = await getOrCreateNotebook(this.contentsManager, this.notebookPath);
+      const notebookModel = await getOrCreateNotebook(contentsManager, this.notebookPath);
 
       // Get or create a Jupyter python kernel session.
       const session = await getOrCreatePythonSession(
-        this.sessionManager,
+        sessionManager,
         this.userId,
         this.notebookName,
         this.conversationId,
@@ -161,7 +154,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
       addCellsToNotebook(notebookModel, code, outputs, executionCount);
 
       // Save the notebook.
-      await this.contentsManager.save(this.notebookPath, notebookModel);
+      await contentsManager.save(this.notebookPath, notebookModel);
 
       // Return the result to the Assistant.
       return JSON.stringify({ stdout, stderr });

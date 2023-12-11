@@ -27,9 +27,9 @@
   "types": "./dist/types/index.d.ts",
   "scripts": {
     "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
-    "build:cjs": "pnpm ts-node-esm --project tsconfig.json ../../scripts/esbuild.config.ts --lib --cjs",
+    "build:cjs": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --lib --cjs",
     "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\"",
-    "build:esm": "pnpm ts-node-esm --project tsconfig.json ../../scripts/esbuild.config.ts --lib",
+    "build:esm": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --lib",
     "build:tsc": "tsc --emitDeclarationOnly"
   },
   "dependencies": {

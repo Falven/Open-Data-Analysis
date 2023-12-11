@@ -1,4 +1,3 @@
-jupyterhub-idle-culler
 numpy
 matplotlib
 pandas

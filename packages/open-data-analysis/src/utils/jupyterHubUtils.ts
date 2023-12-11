@@ -3,8 +3,17 @@ import EventSource from 'eventsource';
 import { getRequiredEnvVar } from './envUtils.js';
 import { JupyterHubUser, ProgressEvent } from './jupyterHubTypes.js';
 
-const baseUrl = getRequiredEnvVar('JUPYTER_BASE_URL');
+const baseURL = getRequiredEnvVar('JUPYTER_BASE_URL');
 const token = getRequiredEnvVar('JUPYTER_TOKEN');
+
+/**
+ * Create an axios instance for the JupyterHub API.
+ */
+const instance = axios.create({
+  baseURL,
+  headers: { Authorization: `token ${token}` },
+  timeout: 2500,
+});
 
 /**
  * Starts a single-user notebook server for the specified user.
@@ -14,12 +23,7 @@ const token = getRequiredEnvVar('JUPYTER_TOKEN');
  */
 export const startServerForUser = async (username: string): Promise<ProgressEvent> => {
   try {
-    const response = await axios.post(
-      `${baseUrl}/hub/api/users/${username}/server`,
-      {},
-      { headers: { Authorization: `token ${token}` } },
-    );
-
+    const response = await instance.post(`/hub/api/users/${username}/server`);
     if (response.status === 201) {
       return { progress: 100, message: 'Server started', ready: true };
     } else if (response.status === 202) {
@@ -42,9 +46,7 @@ export const startServerForUser = async (username: string): Promise<ProgressEven
  * @returns A Promise that resolves to the user data.
  */
 export const getUser = async (username: string): Promise<JupyterHubUser> => {
-  const response = await axios.get<JupyterHubUser>(`${baseUrl}/hub/api/users/${username}`, {
-    headers: { Authorization: `token ${token}` },
-  });
+  const response = await instance.get<JupyterHubUser>(`/hub/api/users/${username}`);
   if (response.status !== 200) {
     throw new Error(`Failed to get user ${username}.`);
   }
@@ -57,13 +59,7 @@ export const getUser = async (username: string): Promise<JupyterHubUser> => {
  * @returns A Promise that resolves to the user data.
  */
 export const createUser = async (username: string): Promise<JupyterHubUser> => {
-  const response = await axios.post(
-    `${baseUrl}/hub/api/users/${username}`,
-    {},
-    {
-      headers: { Authorization: `token ${token}` },
-    },
-  );
+  const response = await instance.post(`/hub/api/users/${username}`);
   if (response.status !== 201) {
     throw new Error(`Failed to create user ${username}.`);
   }
@@ -94,7 +90,7 @@ export const serverStartup = async (
   onError?: (error: MessageEvent) => void,
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const url = `${baseUrl}/hub/api/users/${username}/server/progress`;
+    const url = `${baseURL}/hub/api/users/${username}/server/progress`;
     const eventSource = new EventSource(url, {
       headers: { Authorization: `token ${token}` },
     });
