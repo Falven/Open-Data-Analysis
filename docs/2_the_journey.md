@@ -115,6 +115,13 @@ This file share, accessible at https://fileserviceuploadsperm.blob.core.windows.
 
 > Assistant: The `sandbox:/` prefix in my memory refers to a virtualized file system environment where I can safely execute code and store files temporarily during our interaction. It's like a sandboxed area that is isolated from the rest of the system to prevent any unintended side effects or security issues. When I execute Python code or handle file operations, I use this sandboxed environment to ensure that the operations are contained and do not affect anything outside of our session. Files saved in this environment are not persistent and are typically cleared after the session ends or after a certain period of inactivity. This allows me to perform tasks such as running code snippets, generating files, or processing data in a secure and controlled manner. If you have any tasks that involve code execution or file manipulation, I can use this sandboxed environment to assist you.
 
+> Assistant: Here are a few examples of how I can interact with the `sandbox:/` environment:
+>
+> 1. **Writing to a File:** I can create a new file or overwrite an existing file with new content. For example, if I want to save a text file with some content, I would use Python code to write to a file within the `sandbox:/` directory.
+> 2. **Reading from a File:** I can read the contents of a file stored in the `sandbox:/` directory. This is useful for retrieving data that has been saved previously or for processing information provided in a file format.
+> 3. **Listing Files in a Directory:** I can list all the files and directories within a specific path in the `sandbox:/` environment. This helps to understand what files are available for reading or further manipulation.
+> 4. **Deleting a File:** I can delete a file from the `sandbox:/` directory when it is no longer needed, to keep the environment clean and organized.
+
 The [upcoming Assistants Code Interpreter](https://platform.openai.com/docs/assistants/tools/code-interpreter) offering provides additional insights into the assistant's fine-tuned behavior.
 
 ## 2.5.1 Limitations with Alignment:
