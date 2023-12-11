@@ -152,6 +152,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         handleDisplayData,
       );
 
+      // Shutdown the session.
+      sessionManager.shutdown(session.id);
+
       // Add the code and result to the notebook.
       addCellsToNotebook(notebookModel, code, outputs, executionCount);
 
