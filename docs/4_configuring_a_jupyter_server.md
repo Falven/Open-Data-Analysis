@@ -127,7 +127,7 @@ Leveraging [`@jupterlab/services`](https://github.com/jupyterlab/jupyterlab) or 
 
 Additionally, as you may recall from the system prompt, OpenAI's Advanced Data Analysis feature also uses a `Tool` for interacting with its stateful Jupyter notebook environment.
 
-At this point I would suggest that you explore the source code in `src/server_too_example.ts`, `src/tools/ServerCodeInterpreter.ts` and `src/utils/jupyterServerUtils.ts` to familiarize yourself with some of the concepts. I have annotated the code with comments for clarity.
+At this point I would suggest that you explore the source code in `src/tool_example.ts`, `src/tools/CodeInterpreter.ts` and `src/utils/jupyterServerUtils.ts` to familiarize yourself with some of the concepts. I have annotated the code with comments for clarity.
 
 [Previous: Key Investigation](./3_key_investigation.md) | [Next: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md)  
 [Table of Contents](../README.md)
