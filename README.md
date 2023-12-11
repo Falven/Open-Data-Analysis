@@ -32,6 +32,7 @@ Reverse engineering OpenAI's Advanced Data Analysis feature, formerly Code Inter
    - [5.2 Creating the infrastructure](docs/5_configuring_a_jupyter_hub.md#52-creating-the-infrastructure)
    - [5.3 Deploying JupyterHub](docs/5_configuring_a_jupyter_hub.md#53-deploying-jupyterhub)
    - [5.4 Running the hub example](docs/5_configuring_a_jupyter_hub.md#54-running-the-hub-example)
+   - [5.5 Managing user servers](docs/5_configuring_a_jupyter_hub.md#55-managing-user-servers)
 6. [Conclusion](docs/6_conclusion.md)
    - [6.1 Key Takeaways](docs/6_conclusion.md#61-key-takeaways)
    - [6.2 Future Directions](docs/6_conclusion.md#62-future-directions)
@@ -40,4 +41,3 @@ Reverse engineering OpenAI's Advanced Data Analysis feature, formerly Code Inter
 7. [References](docs/7_references.md)
 
 ---
-

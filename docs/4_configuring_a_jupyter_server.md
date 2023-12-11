@@ -32,9 +32,24 @@ Using the chosen image as our base layer, we copy the requirements file and inst
 ```Dockerfile
 FROM quay.io/jupyter/base-notebook:latest
 
+# Install packages to use for Code Interpretation
 COPY requirements.txt /
-
 RUN conda install -y --file /requirements.txt
+
+# Temporarily switch to root to create and modify /mnt/data
+USER root
+
+# Create the /mnt/data directory
+RUN mkdir -p /mnt/data
+
+# Change the ownership of the /mnt/data directory to the jovyan user
+# jovyan is the default user in Jupyter Docker images
+RUN chown jovyan:users /mnt/data
+
+# Set the appropriate permissions for the /mnt/data directory
+# 770 grants full permissions (read, write, execute) to the owner (jovyan)
+# and read-write permissions to the group (users)
+RUN chmod 770 /mnt/data
 ```
 
 And that's it! We now have our own custom Jupyter Server image.
@@ -49,7 +64,7 @@ docker buildx create --use --platform=linux/amd64 --name jupyter-server-builder
 # Verify the builder instance
 docker buildx inspect jupyter-server-builder --bootstrap
 # Build the container
-docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:latest --load -f ./interpreter/Dockerfile ./interpreter
+docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:latest --load -f ./packages/open-data-analysis/Dockerfile ./packages/open-data-analysis
 ```
 
 ## 4.4 Running and testing the container locally:
