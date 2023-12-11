@@ -164,9 +164,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
       // Return the result to the Assistant.
       return JSON.stringify({ stdout, stderr });
     } catch (error) {
-      console.error(error);
+      console.error(error instanceof Error ? error.message : String(error));
       // Inform the Assistant that an error occurred.
-      return `Error executing code: ${error instanceof Error ? error.message : String(error)}`;
+      return "There was an error executing the user's code. Please inform them to try later.";
     }
   }
 }
