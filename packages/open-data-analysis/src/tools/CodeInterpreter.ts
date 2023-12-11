@@ -10,6 +10,7 @@ import {
   getOrCreateNotebook,
   createServerSettings,
   createServerSettingsForUser,
+  sanitizeUserId,
 } from '../utils/jupyterServerUtils.js';
 import { DisplayCallback } from '../utils/jupyterServerTypes.js';
 import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils.js';
@@ -87,11 +88,10 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   }: CodeInterpreterOptions) {
     super();
 
-    this.userId = userId;
+    this.userId = sanitizeUserId(userId);
     this.conversationId = conversationId;
     this.useHub = useHub;
     this.onDisplayData = onDisplayData;
-    // TODO: Validate userId
     this.sandboxDirectory = this.useHub ? '' : this.userId;
 
     this.schema = codeInterpreterSchema;
