@@ -14,14 +14,26 @@ import {
 import { DisplayCallback } from '../utils/jupyterServerTypes.js';
 import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils.js';
 
-/**
- * Our CodeInterpreter tool options.
- */
 export type CodeInterpreterOptions = {
+  /**
+   * The user ID.
+   */
   userId: string;
+  /**
+   * The conversation ID.
+   */
   conversationId: string;
+  /**
+   * Whether to use a JupyterHub or a single shared Jupyter server.
+   */
   useHub?: boolean;
+  /**
+   * A callback to be invoked whenever an figure is generated.
+   */
   onDisplayData?: DisplayCallback;
+  /**
+   * Additional instructions for code interpretation.
+   */
   instructions?: string;
 };
 
@@ -41,18 +53,18 @@ type CodeInterpreterZodSchema = typeof codeInterpreterSchema;
  * A simple example on how to use Jupyter server as a code interpreter.
  */
 export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
+  userId: string;
+  conversationId: string;
+  useHub?: boolean;
+  onDisplayData?: DisplayCallback;
+
   schema: CodeInterpreterZodSchema;
   name: string;
   description: string;
   description_for_model: string;
 
-  useHub?: boolean;
-
-  userId: string;
-  conversationId: string;
   notebookName: string;
   notebookPath: string;
-  onDisplayData?: DisplayCallback;
 
   static lc_name() {
     return 'CodeInterpreter';
@@ -71,30 +83,27 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
   }: CodeInterpreterOptions) {
     super();
 
-    this.schema = codeInterpreterSchema;
+    this.userId = userId;
+    this.conversationId = conversationId;
+    this.useHub = useHub;
+    this.onDisplayData = onDisplayData;
 
+    this.schema = codeInterpreterSchema;
     // OpenAI functions additionally use the Tool name to gain insigths into using it.
     this.name = 'code_interpreter';
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model =
       this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${
-        useHub ? 'data/' : `/${userId}/data/`
+        this.useHub ? 'data/' : `/${this.userId}/data/`
       }' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
         instructions !== undefined ? `\n\nInstructions: ${instructions}` : ''
       }`;
 
-    // The userId and conversationId are used to create a unique fs hierarchy for the notebook path.
-    this.userId = userId;
-    this.conversationId = conversationId;
-
-    // Whether to utilize a JupyterHub or simply a Jupyter server.
-    this.useHub = useHub;
-
-    this.notebookName = `${conversationId}.ipynb`;
-    this.notebookPath = posix.join(userId, this.notebookName);
-
-    // A callback to be invoked whenever an figure is generated.
-    this.onDisplayData = onDisplayData;
+    this.notebookName = `${this.conversationId}.ipynb`;
+    // The notebook path should be under the user's directory for single-server (non-hub) operation.
+    this.notebookPath = this.useHub
+      ? this.notebookName
+      : posix.join(this.userId, this.notebookName);
   }
 
   /**
@@ -106,6 +115,10 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     if (code === undefined) {
       return renderTextDescriptionAndArgs([this]);
     }
+
+    /**
+     * Replace sandbox:/ in input code with the user's data directory.
+     */
 
     try {
       if (this.useHub) {
@@ -121,7 +134,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
       }
 
       // Create Jupyter Hub or server settings.
-      const serverSettings = this.useHub ? createServerSettingsForUser(this.userId) : createServerSettings();
+      const serverSettings = this.useHub
+        ? createServerSettingsForUser(this.userId)
+        : createServerSettings();
 
       // Initialize the Jupyter Server managers.
       const { contentsManager, sessionManager } = initializeServerManagers(serverSettings);
@@ -137,8 +152,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         this.conversationId,
       );
 
+      // Invoke callback indicating that an image has been generated.
       const handleDisplayData: DisplayCallback = (base64ImageData: string): string => {
-        let result;
+        let result: string | undefined;
         if (this.onDisplayData !== undefined) {
           result = this.onDisplayData(base64ImageData);
         }
@@ -158,7 +174,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
       // Save the notebook.
       await contentsManager.save(this.notebookPath, notebookModel);
 
-      // Return the result to the Assistant.
       return JSON.stringify({ stdout, stderr });
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));
