@@ -158,4 +158,4 @@ const chatLoop = async () => {
   rl.prompt();
 };
 
-chatLoop();
+chatLoop().catch(console.error);

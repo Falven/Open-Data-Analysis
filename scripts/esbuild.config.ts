@@ -66,8 +66,8 @@ const appOptions: Partial<BuildOptions> = {
   plugins,
   external: parseExternals(args),
   banner: {
-    js: `import { createRequire as esbCreateRequire } from 'module';
-import { fileURLToPath as esbFileURLToPath } from 'url';
+    js: `import { createRequire as esbCreateRequire } from 'node:module';
+import { fileURLToPath as esbFileURLToPath } from 'node:url';
 import { dirname as esbDirname } from 'node:path';
 const require = esbCreateRequire(import.meta.url);
 const __filename = esbFileURLToPath(import.meta.url);
