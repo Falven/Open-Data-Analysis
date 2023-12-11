@@ -6,7 +6,7 @@ import {
   addCellsToNotebook,
   executeCode,
   getOrCreatePythonSession,
-  initializeManagers,
+  initializeServerManagers,
   getOrCreateNotebook,
   createServerSettings,
   createServerSettingsForUser,
@@ -122,7 +122,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
 
       // Create Jupyter Hub or server settings.
       const serverSettings = this.useHub ? createServerSettingsForUser(this.userId) : createServerSettings();
-      const { contentsManager, sessionManager } = initializeManagers(serverSettings);
+
+      // Initialize the Jupyter Server managers.
+      const { contentsManager, sessionManager } = initializeServerManagers(serverSettings);
 
       // Get or Create the notebook if it doesn't exist.
       const notebookModel = await getOrCreateNotebook(contentsManager, this.notebookPath);

@@ -55,7 +55,7 @@ export const createServerSettingsForUser = (username: string): ServerConnection.
  * @param serverSettings The server settings.
  * @returns {ServerManagers} The managers.
  */
-export const initializeManagers = (serverSettings: ServerConnection.ISettings): ServerManagers => {
+export const initializeServerManagers = (serverSettings: ServerConnection.ISettings): ServerManagers => {
   const kernelManager = new KernelManager({ serverSettings });
   const sessionManager = new SessionManager({ serverSettings, kernelManager });
   const contentsManager = new ContentsManager({ serverSettings });
