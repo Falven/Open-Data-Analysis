@@ -108,9 +108,6 @@ importers:
       langchain:
         specifier: ^0.0.203
         version: 0.0.203(axios@1.6.2)
-      openai:
-        specifier: ^4.20.1
-        version: 4.20.1
       zod:
         specifier: ^3.22.4
         version: 3.22.4
