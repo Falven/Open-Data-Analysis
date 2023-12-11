@@ -169,6 +169,11 @@ export const getOrCreatePythonSession = async (
   );
 };
 
+/**
+ * Parse {IIOPubMessage} data to text.
+ * @param messageData The message data.
+ * @returns {string} The parsed text.
+ */
 const parseMessageDataToText = (messageData: MultilineString | PartialJSONObject): string =>
   Array.isArray(messageData)
     ? messageData.join('')
