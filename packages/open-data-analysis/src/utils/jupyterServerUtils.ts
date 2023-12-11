@@ -178,10 +178,7 @@ const processMessage = async (
   onDisplayData?: DisplayCallback,
 ): Promise<[string, string, ExecutionCount]> => {
   if (!isStatusMsg(msg)) {
-    outputs.push({
-      output_type: msg.header.msg_type,
-      ...msg.content,
-    });
+    outputs.push({ output_type: msg.header.msg_type, ...msg.content });
   }
 
   let stdout = '';
