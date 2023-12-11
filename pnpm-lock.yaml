@@ -57,7 +57,7 @@ importers:
         specifier: ^0.0.203
         version: 0.0.203(axios@1.6.2)
       open-data-analysis:
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../open-data-analysis
       zod:
         specifier: ^3.22.4
