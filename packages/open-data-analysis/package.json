@@ -25,6 +25,9 @@
   },
   "main": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
     "build:cjs": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --lib --cjs",

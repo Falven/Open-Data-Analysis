@@ -6,6 +6,9 @@
   "license": "ISC",
   "author": "",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "node --loader ts-node/esm ../../scripts/esbuild.config.ts",
     "build:dev": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --dev",
@@ -14,7 +17,7 @@
   },
   "dependencies": {
     "langchain": "^0.0.203",
-    "open-data-analysis": "workspace:^",
+    "open-data-analysis": "workspace:*",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.22.1"
   },
