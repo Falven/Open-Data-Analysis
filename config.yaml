@@ -32,9 +32,13 @@ hub:
         - 'delete:servers'
         - 'admin:users'
       services: ['jupyterhub-idle-culler-service']
-    myapi:
-      description: 'My API'
-      scopes: [admin]
+    user-admin-role:
+      description: 'Role to manage users and their servers'
+      scopes:
+        - 'list:users'
+        - 'read:users'
+        - 'admin:users'
+        - 'servers'
       services: ['myapi']
 imagePullSecrets:
   - name: cr-myacr
