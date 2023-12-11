@@ -220,14 +220,13 @@ kubectl config use-context my-aks-name
 kubectl create secret docker-registry cr-myacr \
    --docker-server=myacr.azurecr.io \
    --docker-username=$SP_ID \
-   --docker-password=$SP_PASSWD \
-   --namespace my-aks-name
+   --docker-password=$SP_PASSWD
 
 # Check our secrets
 kubectl get secrets
 
 # Ensure our pods are running.
-kubectl get pod --namespace my-aks-name
+kubectl get pod
 
 #If you see any pods in a CrashLoopBackOff state, for example, an image puller, check the logs for the pod.
 kubectl logs hook-image-puller-8gjqm -n my-aks-name -c image-pull-singleuser
@@ -237,7 +236,7 @@ kubectl get nodes -o=jsonpath='{.items[*].status.nodeInfo.architecture}'
 docker inspect myacr.azurecr.io/interpreter:latest | grep Architecture
 
 # Find the public IP of our proxy to access our hub
-kubectl --namespace my-aks-name get service proxy-public
+kubectl get service proxy-public
 ```
 
 If you lose your `config.yaml`, you can use `helm list -A` to see all the helm releases in your cluster and `helm get values [RELEASE_NAME] --revision [REVISION_NUMBER]` to get the configuration values for a specific release.
