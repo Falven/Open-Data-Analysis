@@ -25,6 +25,7 @@ hub:
         - 'jupyterhub_idle_culler'
         - '--timeout=3600' # Cull after 1 hour of inactivity
         - '--cull-users'
+        - '--remove-named-servers'
         - '--api-page-size=200'
   loadRoles:
     jupyterhub-idle-culler-role:
