@@ -13,16 +13,28 @@ import {
   ToolsAgentStep,
 } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
+import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
 import { DisplayCallback, getDirname } from 'open-data-analysis/utils';
-import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
+
+const useHub = true;
+const userId = 'user';
+const conversationId = randomUUID();
+
+/**
+ * Convert [My File](sandbox:/mnt/data/my_file.txt)
+ * to
+ * [My File](http://127.0.0.1:8888/files/user/mnt/data/my_file.txt?token=...)
+ *
+ * Address token security
+ */
 
 /**
  * Saves an image to the images directory and returns a markdown link to the image.
  * @param imageName The name of the image.
  * @param base64ImageData The base64 encoded image data.
  */
-const saveImage: DisplayCallback = (base64ImageData: string): string | undefined => {
+const onDisplayData: DisplayCallback = (base64ImageData: string): string | undefined => {
   const imageData = Buffer.from(base64ImageData, 'base64');
   const imageName = `${randomUUID()}.png`;
   const imagePath = join(getDirname(), '..', '..', '..', 'images', imageName);
@@ -51,12 +63,7 @@ const memory = new BufferMemory({
 
 // Define our tools, including our Code Interpreter.
 const tools: StructuredTool[] = [
-  new CodeInterpreter({
-    useHub: false,
-    userId: 'user',
-    conversationId: randomUUID(),
-    onDisplayData: saveImage,
-  }),
+  new CodeInterpreter({ useHub, userId, conversationId, onDisplayData }),
 ];
 
 /**
