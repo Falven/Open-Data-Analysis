@@ -74,7 +74,7 @@ Jot down the authentication token for later use (`?token=...`). You can now acce
 
 This doumentation uses [LangChain JS](https://js.langchain.com/) and [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/overview) for code interpretation. Alternatively, you may configure the example to use OpenAI or other compatible services and frameworks.
 
-Create a `.env` file in the 'examples' package with the following variables:
+Create a `.env` file in the 'examples' package and fill in the following variables:
 
 ```env
 JUPYTER_BASE_URL=http://127.0.0.1:8888
