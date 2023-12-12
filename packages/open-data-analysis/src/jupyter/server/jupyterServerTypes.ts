@@ -1,14 +1,3 @@
-import { KernelManager, SessionManager, ContentsManager } from '@jupyterlab/services';
-
-/**
- * Managers for the Jupyter server.
- */
-export type ServerManagers = {
-  kernelManager: KernelManager;
-  sessionManager: SessionManager;
-  contentsManager: ContentsManager;
-};
-
 /**
  * A callback invoked whenever a figure is generated.
  * @param figureName The name of the generated figure.

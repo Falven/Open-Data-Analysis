@@ -12,10 +12,10 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs"
     },
-    "./utils": {
-      "types": "./dist/types/utils/index.d.ts",
-      "import": "./dist/esm/utils/index.js",
-      "require": "./dist/cjs/utils/index.cjs"
+    "./interpreter": {
+      "types": "./dist/types/interpreter/index.d.ts",
+      "import": "./dist/esm/interpreter/index.js",
+      "require": "./dist/cjs/interpreter/index.cjs"
     },
     "./jupyter/server": {
       "types": "./dist/types/jupyter/server/index.d.ts",
@@ -31,6 +31,11 @@
       "types": "./dist/types/langchain/tools/index.d.ts",
       "import": "./dist/esm/langchain/tools/index.js",
       "require": "./dist/cjs/langchain/tools/index.cjs"
+    },
+    "./utils": {
+      "types": "./dist/types/utils/index.d.ts",
+      "import": "./dist/esm/utils/index.js",
+      "require": "./dist/cjs/utils/index.cjs"
     }
   },
   "main": "./dist/esm/index.js",

@@ -2,11 +2,11 @@ import { posix } from 'node:path';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 import { z } from 'zod';
+import { Contents, ContentsManager, KernelManager, SessionManager } from '@jupyterlab/services';
 import {
   addCellsToNotebook,
   executeCode,
   getOrCreatePythonSession,
-  initializeServerManagers,
   getOrCreateNotebook,
   createServerSettings,
   createServerSettingsForUser,
@@ -15,53 +15,24 @@ import {
 } from 'open-data-analysis/jupyter/server';
 import { getOrCreateUser, serverStartup, startServerForUser } from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
-
-export type CodeInterpreterOptions = {
-  /**
-   * The user ID.
-   */
-  userId: string;
-  /**
-   * The conversation ID.
-   */
-  conversationId: string;
-  /**
-   * Whether to use a JupyterHub or a single shared Jupyter server.
-   */
-  useHub?: boolean;
-  /**
-   * A callback to be invoked whenever an figure is generated.
-   */
-  onDisplayData?: DisplayCallback;
-  /**
-   * Additional instructions for code interpretation.
-   */
-  instructions?: string;
-};
-
-/**
- * Define our OpenAI Function Schema using a Zod Schema.
- */
-const codeInterpreterSchema = z.object({
-  code: z.string().describe('The python code to execute.'),
-});
-
-/**
- * Get the type of the Zod schema.
- */
-type CodeInterpreterZodSchema = typeof codeInterpreterSchema;
+import {
+  CodeInterpreterOptions,
+  CodeInterpreterZodSchema,
+  INTERPRETER_FUNCTION_NAME,
+  INTERPRETER_FUNCTION_ZOD_SCHEMA,
+  interpreterDescriptionTemplate,
+} from 'open-data-analysis/interpreter';
 
 /**
  * A simple example on how to use Jupyter server as a code interpreter.
  */
 export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
-  static sandboxProtocol: string = 'sandbox:/';
-
   userId: string;
   conversationId: string;
   useHub?: boolean;
   onDisplayData?: DisplayCallback;
   sandboxDirectory: string;
+  persistExecutions: boolean;
 
   schema: CodeInterpreterZodSchema;
   name: string;
@@ -85,6 +56,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     useHub,
     onDisplayData,
     instructions,
+    persistExecutions = true,
   }: CodeInterpreterOptions) {
     super();
 
@@ -93,17 +65,13 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.useHub = useHub;
     this.onDisplayData = onDisplayData;
     this.sandboxDirectory = this.useHub ? '' : this.userId;
+    this.persistExecutions = persistExecutions;
 
-    this.schema = codeInterpreterSchema;
-    // OpenAI functions use the Tool name to gain additional insigths.
-    this.name = 'code_interpreter';
+    this.schema = INTERPRETER_FUNCTION_ZOD_SCHEMA;
+    // OpenAI functions use the Tool name to gain additional insights.
+    this.name = INTERPRETER_FUNCTION_NAME;
     // GPT4 Advanced Data Analysis prompt
-    this.description_for_model =
-      this.description = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${
-        CodeInterpreter.sandboxProtocol
-      }' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
-        instructions !== undefined ? `\n\nAdditional Instructions: ${instructions}` : ''
-      }`;
+    this.description_for_model = this.description = interpreterDescriptionTemplate(instructions);
 
     this.notebookName = `${this.conversationId}.ipynb`;
     this.notebookPath = posix.join(this.sandboxDirectory, this.notebookName);
@@ -137,11 +105,20 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         ? createServerSettingsForUser(this.userId)
         : createServerSettings();
 
-      // Initialize the Jupyter Server managers.
-      const { contentsManager, sessionManager } = initializeServerManagers(serverSettings);
+      // Create managers to interact with the Jupyter server.
+      const sessionManager = new SessionManager({
+        serverSettings,
+        kernelManager: new KernelManager({ serverSettings }),
+      });
 
-      // Get or Create the notebook if it doesn't exist.
-      const notebookModel = await getOrCreateNotebook(contentsManager, this.notebookPath);
+      let notebookModel: Contents.IModel | undefined;
+      let contentsManager: ContentsManager | undefined;
+      if (this.persistExecutions === true) {
+        contentsManager = new ContentsManager({ serverSettings });
+
+        // Get or Create the notebook if it doesn't exist.
+        notebookModel = await getOrCreateNotebook(contentsManager, this.notebookPath);
+      }
 
       // Get or create a Jupyter python kernel session.
       const session = await getOrCreatePythonSession(
@@ -170,11 +147,13 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         handleDisplayData,
       );
 
-      // Add the code and result to the notebook.
-      addCellsToNotebook(notebookModel, processedCode, outputs, executionCount);
+      if (notebookModel !== undefined && contentsManager !== undefined) {
+        // Add the code and result to the notebook.
+        addCellsToNotebook(notebookModel, processedCode, outputs, executionCount);
 
-      // Save the notebook.
-      await contentsManager.save(this.notebookPath, notebookModel);
+        // Save the notebook.
+        await contentsManager.save(this.notebookPath, notebookModel);
+      }
 
       return JSON.stringify({ stdout, stderr });
     } catch (error) {

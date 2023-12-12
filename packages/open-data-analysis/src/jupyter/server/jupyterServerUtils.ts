@@ -2,7 +2,6 @@ import { posix } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   ServerConnection,
-  KernelManager,
   SessionManager,
   ContentsManager,
   Contents,
@@ -25,7 +24,7 @@ import {
   isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
-import { DisplayCallback, ServerManagers } from 'open-data-analysis/jupyter/server';
+import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 
 const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const wsURL = getEnvOrThrow('JUPYTER_WS_URL');
@@ -49,20 +48,6 @@ export const createServerSettingsForUser = (username: string): ServerConnection.
     wsUrl: `${wsURL}/user/${username}`,
     token,
   });
-
-/**
- * Create managers to interact with the Jupyter server.
- * @param serverSettings The server settings.
- * @returns {ServerManagers} The managers.
- */
-export const initializeServerManagers = (
-  serverSettings: ServerConnection.ISettings,
-): ServerManagers => {
-  const kernelManager = new KernelManager({ serverSettings });
-  const sessionManager = new SessionManager({ serverSettings, kernelManager });
-  const contentsManager = new ContentsManager({ serverSettings });
-  return { kernelManager, sessionManager, contentsManager };
-};
 
 /**
  * Creates a directory structure based on a given relative path within the Jupyter Server.
