@@ -4,11 +4,12 @@ import { writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam, ChatCompletionChunk } from 'openai/resources/chat/completions';
-import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
-import { getEnvOrThrow, transformSandboxPathsToJupyterUrls } from 'open-data-analysis/utils';
-import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
+import { getEnvOrThrow } from 'open-data-analysis/utils';
+import { DisplayCallback } from 'open-data-analysis/jupyter/server';
+import { JSONSchema } from 'openai/lib/jsonschema.mjs';
 
 const useHub = true;
 const userId = 'fran';
@@ -77,17 +78,6 @@ const chatLoop = async (): Promise<void> => {
     process.exit(0);
   };
 
-  async function getCurrentLocation() {
-    return 'Boston'; // Simulate lookup
-  }
-
-  async function getWeather(args: { location: string }) {
-    const { location } = args;
-    const temperature = 70; // Simulate lookup
-    const precipitation = 'rainy'; // Simulate lookup
-    return { temperature, precipitation };
-  }
-
   rl.on('SIGINT', exit);
 
   rl.on('line', async (input: string): Promise<void> => {
@@ -97,25 +87,23 @@ const chatLoop = async (): Promise<void> => {
       try {
         memory.push({ role: 'user', content: input });
 
+        const { name, description, _call, schema } = new CodeInterpreter({
+          userId,
+          conversationId,
+          useHub,
+          onDisplayData,
+        });
+
         const stream = openai.beta.chat.completions.runFunctions({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4-1106-preview',
           messages: memory,
           functions: [
             {
-              description: 'Get the current location.',
-              function: getCurrentLocation,
-              parameters: { type: 'object', properties: {} },
-            },
-            {
-              description: 'Get the weather for a location.',
-              function: getWeather,
-              parse: JSON.parse, // or use a validation library like zod for typesafe parsing.
-              parameters: {
-                type: 'object',
-                properties: {
-                  location: { type: 'string' },
-                },
-              },
+              name,
+              description,
+              function: _call,
+              parse: (input: string): any => schema.parse(JSON.parse(input)),
+              parameters: zodToJsonSchema(schema) as JSONSchema,
             },
           ],
           stream: true,
