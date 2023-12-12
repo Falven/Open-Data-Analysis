@@ -16,7 +16,7 @@ import {
 import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
-import { transformSandboxPathsToJupyterUrls, DisplayCallback } from 'open-data-analysis/utils';
+import { DisplayCallback, transformSandboxPathsToJupyterUrls } from 'open-data-analysis/utils';
 
 const useHub = true;
 const userId = 'fran';
@@ -52,7 +52,7 @@ const onDisplayData: DisplayCallback = (base64ImageData: string): string | undef
  * Define our chat model and it's parameters.
  * We are using the Chat endpoints so we use `ChatOpenAI`.
  */
-const model = new ChatOpenAI({ temperature: 0, verbose: true });
+const model = new ChatOpenAI({ temperature: 0, verbose: false });
 
 /**
  * Define memory to hold future chat history.
@@ -77,7 +77,7 @@ const tools: StructuredTool[] = [
  * to format our tools into the proper schema for OpenAI.
  */
 const modelWithTools = model.bind({
-  tools: [...tools.map(formatToOpenAITool)],
+  tools: tools.map(formatToOpenAITool),
 });
 
 type UserInput = {
@@ -125,27 +125,32 @@ const agent = RunnableSequence.from([
 /**
  * Construct our agent executor from our Runnable.
  */
-const executor = AgentExecutor.fromAgentAndTools({ agent, tools });
+const executor = AgentExecutor.fromAgentAndTools({
+  agent,
+  tools,
+  memory,
+  returnIntermediateSteps: true,
+});
 
 /**
  * Define a chat loop to interact with the agent.
  */
-const chatLoop = async () => {
-  const exit = (): void => {
-    console.log('\nExiting...');
-    rl.close();
-    process.exit(0);
-  };
-
+const chatLoop = async (): Promise<void> => {
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
     prompt: 'You: ',
   });
 
+  const exit = (): void => {
+    console.log('\nExiting...');
+    rl.close();
+    process.exit(0);
+  };
+
   rl.on('SIGINT', exit);
 
-  rl.on('line', async (input: string) => {
+  rl.on('line', async (input: string): Promise<void> => {
     if (input.trim() === '.exit') {
       exit();
     } else {
