@@ -4,15 +4,11 @@ import { writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
-import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
-import {
-  DisplayCallback,
-  getEnvOrThrow,
-  transformSandboxPathsToJupyterUrls,
-} from 'open-data-analysis/utils';
 import { ChatCompletionMessageParam, ChatCompletionChunk } from 'openai/resources/chat/completions';
+import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
+import { getEnvOrThrow, transformSandboxPathsToJupyterUrls } from 'open-data-analysis/utils';
+import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { EventEmitter } from 'events';
 
 const useHub = true;
 const userId = 'fran';
@@ -55,8 +51,7 @@ const onDisplayData: DisplayCallback = (base64ImageData: string): string | undef
     imageName,
   );
   writeFileSync(imagePath, imageData);
-  // const markdownLink = `![Generated Image](/images/${imageName})`;
-  return undefined;
+  return;
 };
 
 const memory: ChatCompletionMessageParam[] = [

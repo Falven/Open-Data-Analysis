@@ -11,10 +11,10 @@ import {
   createServerSettings,
   createServerSettingsForUser,
   sanitizeUserId,
-} from '../utils/jupyterServerUtils.js';
-import { DisplayCallback } from '../utils/jupyterServerTypes.js';
-import { getOrCreateUser, serverStartup, startServerForUser } from '../utils/jupyterHubUtils.js';
-import { replaceSandboxProtocolWithDirectory } from '../utils/sandboxUtils.js';
+  DisplayCallback,
+} from 'open-data-analysis/jupyter/server';
+import { getOrCreateUser, serverStartup, startServerForUser } from 'open-data-analysis/jupyter/hub';
+import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
 
 export type CodeInterpreterOptions = {
   /**

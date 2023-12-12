@@ -15,8 +15,9 @@ import {
 } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
-import { CodeInterpreter } from 'open-data-analysis/tools/CodeInterpreter';
-import { DisplayCallback, transformSandboxPathsToJupyterUrls } from 'open-data-analysis/utils';
+import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
+import { DisplayCallback } from 'open-data-analysis/jupyter/server';
+import { transformSandboxPathsToJupyterUrls } from 'open-data-analysis/utils';
 
 const useHub = true;
 const userId = 'fran';

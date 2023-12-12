@@ -24,8 +24,8 @@ import {
   isErrorMsg,
   isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
-import { getEnvOrThrow } from './envUtils.js';
-import { DisplayCallback, ServerManagers } from './jupyterServerTypes.js';
+import { getEnvOrThrow } from 'open-data-analysis/utils';
+import { DisplayCallback, ServerManagers } from 'open-data-analysis/jupyter/server';
 
 const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const wsURL = getEnvOrThrow('JUPYTER_WS_URL');

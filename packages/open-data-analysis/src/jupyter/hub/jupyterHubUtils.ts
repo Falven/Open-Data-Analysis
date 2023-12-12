@@ -1,7 +1,7 @@
 import axios from 'axios';
 import EventSource from 'eventsource';
-import { getEnvOrThrow } from './envUtils.js';
-import { JupyterHubUser, ProgressEvent } from './jupyterHubTypes.js';
+import { getEnvOrThrow } from 'open-data-analysis/utils';
+import { JupyterHubUser, ProgressEvent } from 'open-data-analysis/jupyter/hub';
 
 const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const token = getEnvOrThrow('JUPYTER_TOKEN');
