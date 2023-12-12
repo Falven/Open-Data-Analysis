@@ -111,8 +111,8 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         kernelManager: new KernelManager({ serverSettings }),
       });
 
-      let notebookModel: Contents.IModel | undefined;
       let contentsManager: ContentsManager | undefined;
+      let notebookModel: Contents.IModel | undefined;
       if (this.persistExecutions === true) {
         contentsManager = new ContentsManager({ serverSettings });
 
