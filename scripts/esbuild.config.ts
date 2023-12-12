@@ -60,19 +60,19 @@ const onEndPlugin: Plugin = {
 const plugins: Plugin[] = [dynamicNodeNativeModulePlugin];
 
 const appOptions: Partial<BuildOptions> = {
-  entryPoints: ['src/tool_example.ts'],
+  entryPoints: ['src/langchain_example.ts', 'src/openai_example.ts'],
   outdir: 'dist/',
   bundle: false,
   plugins,
   external: parseExternals(args),
-//   banner: {
-//     js: `import { createRequire as esbCreateRequire } from 'node:module';
-// import { fileURLToPath as esbFileURLToPath } from 'node:url';
-// import { dirname as esbDirname } from 'node:path';
-// const require = esbCreateRequire(import.meta.url);
-// const __filename = esbFileURLToPath(import.meta.url);
-// const __dirname = esbDirname(__filename);`,
-//   },
+  //   banner: {
+  //     js: `import { createRequire as esbCreateRequire } from 'node:module';
+  // import { fileURLToPath as esbFileURLToPath } from 'node:url';
+  // import { dirname as esbDirname } from 'node:path';
+  // const require = esbCreateRequire(import.meta.url);
+  // const __filename = esbFileURLToPath(import.meta.url);
+  // const __dirname = esbDirname(__filename);`,
+  //   },
 };
 
 const entryPoints = await glob('src/**/*.ts');

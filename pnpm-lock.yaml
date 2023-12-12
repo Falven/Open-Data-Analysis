@@ -59,6 +59,9 @@ importers:
       open-data-analysis:
         specifier: workspace:*
         version: link:../open-data-analysis
+      openai:
+        specifier: ^4.20.1
+        version: 4.20.1
       zod:
         specifier: ^3.22.4
         version: 3.22.4

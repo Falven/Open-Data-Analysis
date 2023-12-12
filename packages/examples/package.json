@@ -12,12 +12,14 @@
   "scripts": {
     "build": "node --loader ts-node/esm ../../scripts/esbuild.config.ts",
     "build:dev": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --dev",
-    "start": "pnpm dotenv node ./dist/tool_example.js",
+    "start:langchain": "pnpm dotenv node ./dist/langchain_example.js",
+    "start:openai": "pnpm dotenv node ./dist/openai_example.js",
     "watch": "pnpm dotenv node --loader ts-node/esm ../../scripts/esbuild.config.ts --dev --watch"
   },
   "dependencies": {
     "langchain": "^0.0.203",
     "open-data-analysis": "workspace:*",
+    "openai": "^4.20.1",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.22.1"
   },
