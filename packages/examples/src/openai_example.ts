@@ -10,7 +10,9 @@ import {
   getEnvOrThrow,
   transformSandboxPathsToJupyterUrls,
 } from 'open-data-analysis/utils';
-import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { ChatCompletionMessageParam, ChatCompletionChunk } from 'openai/resources/chat/completions';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import { EventEmitter } from 'events';
 
 const useHub = true;
 const userId = 'fran';
@@ -80,6 +82,17 @@ const chatLoop = async (): Promise<void> => {
     process.exit(0);
   };
 
+  async function getCurrentLocation() {
+    return 'Boston'; // Simulate lookup
+  }
+
+  async function getWeather(args: { location: string }) {
+    const { location } = args;
+    const temperature = 70; // Simulate lookup
+    const precipitation = 'rainy'; // Simulate lookup
+    return { temperature, precipitation };
+  }
+
   rl.on('SIGINT', exit);
 
   rl.on('line', async (input: string): Promise<void> => {
@@ -89,9 +102,27 @@ const chatLoop = async (): Promise<void> => {
       try {
         memory.push({ role: 'user', content: input });
 
-        const stream = await openai.chat.completions.create({
-          model: deployment,
+        const stream = openai.beta.chat.completions.runFunctions({
+          model: 'gpt-3.5-turbo',
           messages: memory,
+          functions: [
+            {
+              description: 'Get the current location.',
+              function: getCurrentLocation,
+              parameters: { type: 'object', properties: {} },
+            },
+            {
+              description: 'Get the weather for a location.',
+              function: getWeather,
+              parse: JSON.parse, // or use a validation library like zod for typesafe parsing.
+              parameters: {
+                type: 'object',
+                properties: {
+                  location: { type: 'string' },
+                },
+              },
+            },
+          ],
           stream: true,
         });
 
