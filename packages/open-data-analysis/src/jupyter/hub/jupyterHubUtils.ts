@@ -2,7 +2,12 @@ import axios, { AxiosResponse } from 'axios';
 import EventSource from 'eventsource';
 import { Options } from 'p-retry';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
-import { JupyterHubUser, ProgressEvent, isJupyterHubUser } from 'open-data-analysis/jupyter/hub';
+import {
+  JupyterHubUser,
+  ProgressEvent,
+  isJupyterHubUser,
+  isProgressEvent,
+} from 'open-data-analysis/jupyter/hub';
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
@@ -144,23 +149,40 @@ export async function* streamServerProgress(
     serverUrl =
       serverKeys.length > 0
         ? servers[serverKeys[0]].progress_url
-        : `/hub/api/users/${name}/server/progress`;
+        : `${BaseURL}/hub/api/users/${name}/server/progress`;
   } else if (typeof user === 'string') {
-    serverUrl = `/hub/api/users/${user}/server/progress`;
+    serverUrl = `${BaseURL}/hub/api/users/${user}/server/progress`;
   } else {
     throw new Error('Unexpected user parameter.');
   }
 
-  const eventSource = new EventSource(serverUrl);
+  const eventSource = new EventSource(serverUrl, {
+    headers: { Authorization: `token ${Token}` },
+  });
 
   while (eventSource.readyState !== EventSource.CLOSED) {
-    yield await new Promise((resolve, reject) => {
-      eventSource.onmessage = (event) => resolve(event.data);
-      eventSource.onerror = (error) => reject(error);
+    yield await new Promise<ProgressEvent>((resolve, reject): void => {
+      eventSource.onmessage = (event: MessageEvent<string>) => {
+        const progressEvent: unknown = JSON.parse(event.data);
+
+        if (!isProgressEvent(progressEvent)) {
+          reject(new Error('Unexpected progress event.'));
+          return;
+        }
+
+        resolve(progressEvent);
+
+        if (progressEvent?.ready === true) {
+          eventSource.close();
+        }
+      };
+
+      eventSource.onerror = (error: MessageEvent) => {
+        eventSource.close();
+        reject(error);
+      };
     });
   }
-
-  eventSource.close();
 }
 
 /**
