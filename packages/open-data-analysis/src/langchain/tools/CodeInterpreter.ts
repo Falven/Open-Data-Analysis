@@ -20,9 +20,8 @@ import {
   DisplayCallback,
 } from 'open-data-analysis/jupyter/server';
 import {
-  JupyterHubUser,
   getOrCreateUser,
-  serverProgress,
+  streamServerProgress,
   startServerForUser,
 } from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
@@ -107,9 +106,10 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
 
         // Start the JupyterHub server for the user if it is not already running.
         const progress = await startServerForUser(user);
-        if (!progress.ready) {
-          const progressEventStream = await serverProgress(user);
-          for await (const {} of progressEventStream) {
+        if (progress?.ready !== true) {
+          const progressEventStream = streamServerProgress(user);
+          for await (const progressEvent of progressEventStream) {
+            console.log(JSON.stringify(progressEvent));
           }
         }
 

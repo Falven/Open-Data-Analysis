@@ -1,24 +1,20 @@
 import axios, { AxiosResponse } from 'axios';
+import EventSource from 'eventsource';
 import { Options } from 'p-retry';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
-import {
-  JupyterHubUser,
-  ProgressEvent,
-  isJupyterHubUser,
-  isProgressEvent,
-} from 'open-data-analysis/jupyter/hub';
-import { Transform } from 'node:stream';
+import { JupyterHubUser, ProgressEvent, isJupyterHubUser } from 'open-data-analysis/jupyter/hub';
+import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
 
-const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
-const token = getEnvOrThrow('JUPYTER_TOKEN');
+const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const Token = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
  * Create an axios instance for the JupyterHub API.
  */
 const instance = axios.create({
-  baseURL,
+  baseURL: BaseURL,
   headers: {
-    'Authorization': `token ${token}`,
+    'Authorization': `token ${Token}`,
     'Content-Type': 'application/json',
   },
   timeout: 2500,
@@ -30,7 +26,10 @@ const instance = axios.create({
  * @param user The username of the user for whom to start the server.
  * @returns A Promise that resolves to a ProgressEvent indicating the server start status.
  */
-export const startServerForUser = async (user: string | JupyterHubUser): Promise<ProgressEvent> => {
+export const startServerForUser = async (
+  user: string | JupyterHubUser,
+  options?: Options,
+): Promise<ProgressEvent> => {
   try {
     let response: AxiosResponse;
 
@@ -39,9 +38,19 @@ export const startServerForUser = async (user: string | JupyterHubUser): Promise
       if (firstServer !== undefined && firstServer.ready) {
         return { progress: 100, message: 'Server started', ready: true };
       }
-      response = await instance.post(`/hub/api/users/${user.name}/server`, {});
+      response = await createRetryableAxiosRequest(
+        async (): Promise<AxiosResponse> =>
+          await instance.post(`/hub/api/users/${user.name}/server`, {}),
+        options,
+        [400],
+      );
     } else if (typeof user === 'string') {
-      response = await instance.post(`/hub/api/users/${user}/server`, {});
+      response = await createRetryableAxiosRequest(
+        async (): Promise<AxiosResponse> =>
+          await instance.post(`/hub/api/users/${user}/server`, {}),
+        options,
+        [400],
+      );
     } else {
       throw new Error('Unexpected user parameter.');
     }
@@ -67,8 +76,13 @@ export const startServerForUser = async (user: string | JupyterHubUser): Promise
  * @param username The username of the user to fetch.
  * @returns A Promise that resolves to the user data.
  */
-export const getUser = async (username: string): Promise<JupyterHubUser> => {
-  const { data, status } = await instance.get<JupyterHubUser>(`/hub/api/users/${username}`);
+export const getUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
+  const { data, status } = await createRetryableAxiosRequest(
+    async (): Promise<AxiosResponse> =>
+      await instance.get<JupyterHubUser>(`/hub/api/users/${username}`),
+    options,
+    [404],
+  );
 
   if (!isJupyterHubUser(data)) {
     throw new Error('Jupyter User schema validation failed.');
@@ -86,8 +100,12 @@ export const getUser = async (username: string): Promise<JupyterHubUser> => {
  * @param username The username of the user to create.
  * @returns A Promise that resolves to the user data.
  */
-export const createUser = async (username: string): Promise<JupyterHubUser> => {
-  const { data, status } = await instance.post<JupyterHubUser>(`/hub/api/users/${username}`, {});
+export const createUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
+  const { data, status } = await createRetryableAxiosRequest(
+    async (): Promise<AxiosResponse> =>
+      await instance.post<JupyterHubUser>(`/hub/api/users/${username}`, {}),
+    options,
+  );
 
   if (!isJupyterHubUser(data)) {
     throw new Error('Jupyter User schema validation failed.');
@@ -101,27 +119,23 @@ export const createUser = async (username: string): Promise<JupyterHubUser> => {
 };
 
 /**
- * Asynchronously gets the server progress for a specific user.
+ * Asynchronously retrieves the server progress for a specific user using Server-Sent Events (SSE).
  *
- * This function connects to the JupyterHub API using Server-Sent Events (SSE). It listens for
- * messages that indicate the progress of the server starting up. The function returns a Promise,
- * which resolves when the server startup is complete, and can optionally execute a callback
- * function on each progress update and on errors.
+ * This function connects to the JupyterHub API and streams server startup progress events using SSE.
+ * It processes the incoming events, extracting and transforming each progress event into a consumable object.
  *
- * @param user The username for whom the server startup progress is being tracked.
- * @param onProgressUpdate (Optional) A callback function that is called with a ProgressEvent
- *        object each time a progress update is received from the server. This callback allows
- *        the caller to handle progress updates (e.g., logging progress, updating UI).
- * @param onError (Optional) A callback function that is called when an error occurs during
- *        the SSE connection. It receives a MessageEvent object containing error details.
+ * @param user The username (string) or JupyterHubUser object for whom the server startup progress
+ *        is being tracked. This determines the server URL for the SSE connection.
  *
- * @returns A Promise that resolves when the server startup process is complete. If an error
- *          occurs during the SSE connection or server startup, the Promise is rejected.
+ * @param options (Optional) Configuration options for the request.
+ *
+ * @returns An asynchronous generator (AsyncGenerator) that yields server progress updates as objects.
+ *          If an error occurs in setting up the stream or during data processing, the generator will throw an error.
  */
-export const serverProgress = async (
+export async function* streamServerProgress(
   user: string | JupyterHubUser,
-  options: Options = { retries: 3 },
-): Promise<NodeJS.ReadableStream> => {
+  options?: Options,
+): AsyncGenerator<ProgressEvent, void> {
   let serverUrl: string;
 
   if (isJupyterHubUser(user)) {
@@ -137,54 +151,17 @@ export const serverProgress = async (
     throw new Error('Unexpected user parameter.');
   }
 
-  const response = await instance.get(serverUrl, {
-    headers: {
-      'Accept': 'text/event-stream',
-      'Content-Type': 'application/json',
-    },
-    responseType: 'stream',
-  });
+  const eventSource = new EventSource(serverUrl);
 
-  const progressEventTransform = new Transform({
-    objectMode: true,
-    write(
-      chunk: Buffer,
-      encoding: BufferEncoding,
-      callback: (error?: Error | null | undefined) => void,
-    ): void {
-      try {
-        const text = chunk.toString('utf8');
-        const lines = text.split('\n');
+  while (eventSource.readyState !== EventSource.CLOSED) {
+    yield await new Promise((resolve, reject) => {
+      eventSource.onmessage = (event) => resolve(event.data);
+      eventSource.onerror = (error) => reject(error);
+    });
+  }
 
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            const jsonStr = line.substring(5);
-            const progressEvent: unknown = JSON.parse(jsonStr);
-
-            if (!isProgressEvent(progressEvent)) {
-              callback(new Error(`Unexpected progress event: ${jsonStr}`));
-              return;
-            }
-
-            this.push(progressEvent);
-          }
-        }
-        callback();
-      } catch (error: unknown) {
-        const errorMessage = typeof error === 'string' ? error : String(error);
-        const errorObject = error instanceof Error ? error : new Error(errorMessage);
-        callback(errorObject);
-      }
-    },
-    final(callback: (error?: Error | null | undefined) => void): void {
-      callback();
-    },
-  });
-
-  response.data.pipe(progressEventTransform);
-
-  return progressEventTransform;
-};
+  eventSource.close();
+}
 
 /**
  * Gets or creates a user in JupyterHub.
@@ -195,12 +172,8 @@ export const getOrCreateUser = async (username: string): Promise<JupyterHubUser>
   try {
     return await getUser(username);
   } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response !== undefined) {
-      if (error.response.status === 404) {
-        return await createUser(username);
-      } else {
-        throw error;
-      }
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return await createUser(username);
     }
     throw error;
   }

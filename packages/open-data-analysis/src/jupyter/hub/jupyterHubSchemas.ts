@@ -1,4 +1,4 @@
-import { string, z } from 'zod';
+import { z } from 'zod';
 
 export const JupyterServerStateDetailsSchema = z.object({
   pod_name: z.string(),
@@ -8,8 +8,13 @@ export const JupyterServerStateDetailsSchema = z.object({
 
 export type JupyterServerStateDetails = z.infer<typeof JupyterServerStateDetailsSchema>;
 
-export const isJupyterServerStateDetails = (obj: unknown): obj is JupyterServerStateDetails =>
-  JupyterServerStateDetailsSchema.safeParse(obj).success;
+export const isJupyterServerStateDetails = (obj: unknown): obj is JupyterServerStateDetails => {
+  const result = JupyterServerStateDetailsSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('JupyterServerStateDetails validation failed:', result.error);
+  }
+  return result.success;
+};
 
 export const JupyterServerDetailsSchema = z.object({
   name: z.string(),
@@ -22,14 +27,19 @@ export const JupyterServerDetailsSchema = z.object({
   started: z.string(),
   // ISO 8601 date strings
   last_activity: z.string(),
-  state: z.record(z.unknown()),
+  state: z.record(z.unknown()).optional(),
   user_options: z.record(JupyterServerStateDetailsSchema),
 });
 
 export type JupyterServerDetails = z.infer<typeof JupyterServerDetailsSchema>;
 
-export const isJupyterServerDetails = (obj: unknown): obj is JupyterServerDetails =>
-  JupyterServerDetailsSchema.safeParse(obj).success;
+export const isJupyterServerDetails = (obj: unknown): obj is JupyterServerDetails => {
+  const result = JupyterServerDetailsSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('JupyterServerDetails validation failed:', result.error);
+  }
+  return result.success;
+};
 
 export const JupyterHubUserSchema = z.object({
   name: z.string(),
@@ -48,8 +58,13 @@ export const JupyterHubUserSchema = z.object({
 
 export type JupyterHubUser = z.infer<typeof JupyterHubUserSchema>;
 
-export const isJupyterHubUser = (obj: unknown): obj is JupyterHubUser =>
-  JupyterHubUserSchema.safeParse(obj).success;
+export const isJupyterHubUser = (obj: unknown): obj is JupyterHubUser => {
+  const result = JupyterHubUserSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('JupyterHubUser validation failed:', result.error);
+  }
+  return result.success;
+};
 
 const ManagedFieldSchema = z.object({
   manager: z.string(),
@@ -62,8 +77,13 @@ const ManagedFieldSchema = z.object({
 
 export type ManagedField = z.infer<typeof ManagedFieldSchema>;
 
-export const isManagedField = (obj: unknown): obj is ManagedField =>
-  ManagedFieldSchema.safeParse(obj).success;
+export const isManagedField = (obj: unknown): obj is ManagedField => {
+  const result = ManagedFieldSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('ManagedField validation failed:', result.error);
+  }
+  return result.success;
+};
 
 const MetadataSchema = z.object({
   name: z.string(),
@@ -76,7 +96,13 @@ const MetadataSchema = z.object({
 
 export type Metadata = z.infer<typeof MetadataSchema>;
 
-export const isMetadata = (obj: unknown): obj is Metadata => MetadataSchema.safeParse(obj).success;
+export const isMetadata = (obj: unknown): obj is Metadata => {
+  const result = MetadataSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('Metadata validation failed:', result.error);
+  }
+  return result.success;
+};
 
 const InvolvedObjectSchema = z.object({
   kind: z.string(),
@@ -85,34 +111,61 @@ const InvolvedObjectSchema = z.object({
   uid: z.string(),
   apiVersion: z.string(),
   resourceVersion: z.string(),
+  fieldPath: z.string().optional(),
 });
 
 export type InvolvedObject = z.infer<typeof InvolvedObjectSchema>;
 
-export const isInvolvedObject = (obj: unknown): obj is InvolvedObject =>
-  InvolvedObjectSchema.safeParse(obj).success;
+export const isInvolvedObject = (obj: unknown): obj is InvolvedObject => {
+  const result = InvolvedObjectSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('InvolvedObject validation failed:', result.error);
+  }
+  return result.success;
+};
+
+const EventSourceSchema = z.object({
+  component: z.string(),
+  host: z.string(),
+});
+
+export type EventSource = z.infer<typeof EventSourceSchema>;
+
+export const isEventSource = (obj: unknown): obj is EventSource => {
+  const result = EventSourceSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('EventSource validation failed:', result.error);
+  }
+  return result.success;
+};
 
 const RawProgressEventSchema = z.object({
-  kind: z.string(),
+  kind: z.string().optional(),
   apiVersion: z.string(),
   metadata: MetadataSchema,
   involvedObject: InvolvedObjectSchema,
   reason: z.string(),
   message: z.string(),
-  source: z.record(z.unknown()),
+  source: z.record(EventSourceSchema),
   firstTimestamp: z.string().nullable(),
   lastTimestamp: z.string().nullable(),
+  count: z.number().optional(),
   type: z.string(),
-  eventTime: z.string(),
-  action: z.string(),
+  eventTime: z.string().nullable(),
+  action: z.string().optional(),
   reportingComponent: z.string(),
   reportingInstance: z.string(),
 });
 
 export type RawProgressEvent = z.infer<typeof RawProgressEventSchema>;
 
-export const isRawProgressEvent = (obj: unknown): obj is RawProgressEvent =>
-  RawProgressEventSchema.safeParse(obj).success;
+export const isRawProgressEvent = (obj: unknown): obj is RawProgressEvent => {
+  const result = RawProgressEventSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('RawProgressEvent validation failed:', result.error);
+  }
+  return result.success;
+};
 
 /**
  * An event for tracking the progress of a Jupyter server startup.
@@ -128,5 +181,10 @@ export const ProgressEventSchema = z.object({
 
 export type ProgressEvent = z.infer<typeof ProgressEventSchema>;
 
-export const isProgressEvent = (obj: unknown): obj is ProgressEvent =>
-  ProgressEventSchema.safeParse(obj).success;
+export const isProgressEvent = (obj: unknown): obj is ProgressEvent => {
+  const result = ProgressEventSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('ProgressEvent validation failed:', result.error);
+  }
+  return result.success;
+};
