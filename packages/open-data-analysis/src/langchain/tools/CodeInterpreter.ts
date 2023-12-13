@@ -22,7 +22,7 @@ import {
 import {
   JupyterHubUser,
   getOrCreateUser,
-  serverProgressAsyncIterator,
+  serverProgress,
   startServerForUser,
 } from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
@@ -108,8 +108,8 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         // Start the JupyterHub server for the user if it is not already running.
         const progress = await startServerForUser(user);
         if (!progress.ready) {
-          const progressIterator = serverProgressAsyncIterator(user);
-          for await (const {} of progressIterator) {
+          const progressEventStream = await serverProgress(user);
+          for await (const {} of progressEventStream) {
           }
         }
 

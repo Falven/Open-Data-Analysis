@@ -121,7 +121,7 @@ export const ProgressEventSchema = z.object({
   progress: z.number().min(0).max(100),
   raw_event: RawProgressEventSchema.optional(),
   message: z.string(),
-  ready: z.boolean(),
+  ready: z.boolean().optional(),
   html_message: z.string().optional(),
   url: z.string().optional(),
 });

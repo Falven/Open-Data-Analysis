@@ -12,7 +12,7 @@ import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
 
 const useHub = true;
-const userId = 'tubby';
+const userId = 'veeta';
 const conversationId = randomUUID();
 
 // The name of your Azure OpenAI Resource.

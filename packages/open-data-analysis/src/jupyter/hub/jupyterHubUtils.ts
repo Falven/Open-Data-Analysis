@@ -4,11 +4,10 @@ import { getEnvOrThrow } from 'open-data-analysis/utils';
 import {
   JupyterHubUser,
   ProgressEvent,
-  ProgressEventSchema,
   isJupyterHubUser,
   isProgressEvent,
 } from 'open-data-analysis/jupyter/hub';
-import { Writable } from 'node:stream';
+import { Transform } from 'node:stream';
 
 const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const token = getEnvOrThrow('JUPYTER_TOKEN');
@@ -119,44 +118,41 @@ export const createUser = async (username: string): Promise<JupyterHubUser> => {
  * @returns A Promise that resolves when the server startup process is complete. If an error
  *          occurs during the SSE connection or server startup, the Promise is rejected.
  */
-export async function* serverProgressAsyncIterator(
+export const serverProgress = async (
   user: string | JupyterHubUser,
   options: Options = { retries: 3 },
-): AsyncGenerator<ProgressEvent, void> {
-  try {
-    let serverUrl: string;
+): Promise<NodeJS.ReadableStream> => {
+  let serverUrl: string;
 
-    if (isJupyterHubUser(user)) {
-      const { name, servers } = user;
-      const serverKeys = Object.keys(servers);
-      serverUrl =
-        serverKeys.length > 0
-          ? servers[serverKeys[0]].progress_url
-          : `/hub/api/users/${name}/server/progress`;
-    } else if (typeof user === 'string') {
-      serverUrl = `/hub/api/users/${user}/server/progress`;
-    } else {
-      throw new Error('Unexpected user parameter.');
-    }
+  if (isJupyterHubUser(user)) {
+    const { name, servers } = user;
+    const serverKeys = Object.keys(servers);
+    serverUrl =
+      serverKeys.length > 0
+        ? servers[serverKeys[0]].progress_url
+        : `/hub/api/users/${name}/server/progress`;
+  } else if (typeof user === 'string') {
+    serverUrl = `/hub/api/users/${user}/server/progress`;
+  } else {
+    throw new Error('Unexpected user parameter.');
+  }
 
-    const response = await instance.get(serverUrl, {
-      headers: {
-        'Accept': 'text/event-stream',
-        'Content-Type': 'application/json',
-      },
-      responseType: 'stream',
-    });
+  const response = await instance.get(serverUrl, {
+    headers: {
+      'Accept': 'text/event-stream',
+      'Content-Type': 'application/json',
+    },
+    responseType: 'stream',
+  });
 
-    const queue: ProgressEvent[] = [];
-    // Ref to resolve the promise later.
-    let resolveQueue: ((value: void | PromiseLike<void>) => void) | null = null;
-
-    const progressEventWriter = new Writable({
-      write(
-        chunk: Buffer,
-        encoding: BufferEncoding,
-        callback: (error?: Error | null | undefined) => void,
-      ) {
+  const progressEventTransform = new Transform({
+    objectMode: true,
+    write(
+      chunk: Buffer,
+      encoding: BufferEncoding,
+      callback: (error?: Error | null | undefined) => void,
+    ): void {
+      try {
         const text = chunk.toString('utf8');
         const lines = text.split('\n');
 
@@ -170,43 +166,25 @@ export async function* serverProgressAsyncIterator(
               return;
             }
 
-            queue.push(progressEvent);
+            this.push(progressEvent);
           }
         }
-
         callback();
-      },
-    });
-
-    progressEventWriter.on('error', (error: unknown) => {
-      if (resolveQueue !== null) {
-        resolveQueue(Promise.reject(error));
+      } catch (error: unknown) {
+        const errorMessage = typeof error === 'string' ? error : String(error);
+        const errorObject = error instanceof Error ? error : new Error(errorMessage);
+        callback(errorObject);
       }
-    });
+    },
+    final(callback: (error?: Error | null | undefined) => void): void {
+      callback();
+    },
+  });
 
-    response.data.pipe(progressEventWriter);
+  response.data.pipe(progressEventTransform);
 
-    while (true) {
-      if (queue.length === 0) {
-        await new Promise<void>((resolve) => (resolveQueue = resolve));
-      } else {
-        const progressEvent = queue.shift();
-        if (progressEvent !== undefined) {
-          yield progressEvent;
-        }
-      }
-    }
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      const errorMessage =
-        error.response?.status === 404
-          ? `User ${typeof user === 'string' ? user : user.name} does not exist.`
-          : 'An error occurred during server progress tracking.';
-      throw new Error(errorMessage);
-    }
-    throw error;
-  }
-}
+  return progressEventTransform;
+};
 
 /**
  * Gets or creates a user in JupyterHub.
