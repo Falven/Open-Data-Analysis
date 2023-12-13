@@ -2,7 +2,13 @@ import { posix } from 'node:path';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 import { z } from 'zod';
-import { Contents, ContentsManager, KernelManager, SessionManager } from '@jupyterlab/services';
+import {
+  Contents,
+  ContentsManager,
+  KernelManager,
+  ServerConnection,
+  SessionManager,
+} from '@jupyterlab/services';
 import {
   addCellsToNotebook,
   executeCode,
@@ -13,14 +19,19 @@ import {
   sanitizeUserId,
   DisplayCallback,
 } from 'open-data-analysis/jupyter/server';
-import { getOrCreateUser, serverStartup, startServerForUser } from 'open-data-analysis/jupyter/hub';
+import {
+  JupyterHubUser,
+  getOrCreateUser,
+  serverProgressAsyncIterator,
+  startServerForUser,
+} from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
 import {
   CodeInterpreterOptions,
   CodeInterpreterZodSchema,
-  INTERPRETER_FUNCTION_NAME,
-  INTERPRETER_FUNCTION_ZOD_SCHEMA,
-  interpreterDescriptionTemplate,
+  FunctionName,
+  FunctionZodSchema,
+  DescriptionTemplate,
 } from 'open-data-analysis/interpreter';
 
 /**
@@ -67,11 +78,11 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.sandboxDirectory = this.useHub ? '' : this.userId;
     this.persistExecutions = persistExecutions;
 
-    this.schema = INTERPRETER_FUNCTION_ZOD_SCHEMA;
+    this.schema = FunctionZodSchema;
     // OpenAI functions use the Tool name to gain additional insights.
-    this.name = INTERPRETER_FUNCTION_NAME;
+    this.name = FunctionName;
     // GPT4 Advanced Data Analysis prompt
-    this.description_for_model = this.description = interpreterDescriptionTemplate(instructions);
+    this.description_for_model = this.description = DescriptionTemplate(instructions);
 
     this.notebookName = `${this.conversationId}.ipynb`;
     this.notebookPath = posix.join(this.sandboxDirectory, this.notebookName);
@@ -88,22 +99,26 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     }
 
     try {
+      let serverSettings: ServerConnection.ISettings;
+
       if (this.useHub) {
         // Get or create the JupyterHub user if it does not exist.
-        await getOrCreateUser(this.userId);
+        const user = await getOrCreateUser(this.userId);
 
         // Start the JupyterHub server for the user if it is not already running.
-        const progress = await startServerForUser(this.userId);
+        const progress = await startServerForUser(user);
         if (!progress.ready) {
-          // If the server is not ready, wait for it to be ready.
-          await serverStartup(this.userId);
+          const progressIterator = serverProgressAsyncIterator(user);
+          for await (const {} of progressIterator) {
+          }
         }
-      }
 
-      // Create Jupyter Hub or server settings.
-      const serverSettings = this.useHub
-        ? createServerSettingsForUser(this.userId)
-        : createServerSettings();
+        // Create Jupyter Hub server settings.
+        serverSettings = createServerSettingsForUser(user);
+      } else {
+        // Create single user Jupyter server settings.
+        serverSettings = createServerSettings();
+      }
 
       // Create managers to interact with the Jupyter server.
       const sessionManager = new SessionManager({
@@ -113,6 +128,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
 
       let contentsManager: ContentsManager | undefined;
       let notebookModel: Contents.IModel | undefined;
+
       if (this.persistExecutions === true) {
         contentsManager = new ContentsManager({ serverSettings });
 

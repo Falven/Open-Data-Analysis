@@ -25,6 +25,7 @@ import {
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
+import { JupyterHubUser, isJupyterHubUser } from '../hub/jupyterHubSchemas.js';
 
 const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const wsURL = getEnvOrThrow('JUPYTER_WS_URL');
@@ -39,15 +40,28 @@ export const createServerSettings = (): ServerConnection.ISettings =>
 
 /**
  * Create settings for a Jupyter server for a specific user.
- * @param username The username of the user.
+ * @param user The username of the user.
  * @returns {ServerConnection.ISettings} The server settings.
  */
-export const createServerSettingsForUser = (username: string): ServerConnection.ISettings =>
-  ServerConnection.makeSettings({
-    baseUrl: `${baseURL}/user/${username}`,
-    wsUrl: `${wsURL}/user/${username}`,
+export const createServerSettingsForUser = (
+  user: string | JupyterHubUser,
+): ServerConnection.ISettings => {
+  let name: string;
+
+  if (isJupyterHubUser(user)) {
+    ({ name } = user);
+  } else if (typeof user === 'string') {
+    name = user;
+  } else {
+    throw new TypeError('Unexpected user parameter.');
+  }
+
+  return ServerConnection.makeSettings({
+    baseUrl: `${baseURL}/user/${name}`,
+    wsUrl: `${wsURL}/user/${name}`,
     token,
   });
+};
 
 /**
  * Creates a directory structure based on a given relative path within the Jupyter Server.

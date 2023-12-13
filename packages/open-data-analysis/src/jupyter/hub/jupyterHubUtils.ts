@@ -1,7 +1,14 @@
-import axios from 'axios';
-import EventSource from 'eventsource';
+import axios, { AxiosResponse } from 'axios';
+import { Options } from 'p-retry';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
-import { JupyterHubUser, ProgressEvent } from 'open-data-analysis/jupyter/hub';
+import {
+  JupyterHubUser,
+  ProgressEvent,
+  ProgressEventSchema,
+  isJupyterHubUser,
+  isProgressEvent,
+} from 'open-data-analysis/jupyter/hub';
+import { Writable } from 'node:stream';
 
 const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const token = getEnvOrThrow('JUPYTER_TOKEN');
@@ -11,30 +18,46 @@ const token = getEnvOrThrow('JUPYTER_TOKEN');
  */
 const instance = axios.create({
   baseURL,
-  headers: { Authorization: `token ${token}` },
+  headers: {
+    'Authorization': `token ${token}`,
+    'Content-Type': 'application/json',
+  },
   timeout: 2500,
 });
 
 /**
  * Starts a single-user notebook server for the specified user.
  *
- * @param username The username of the user for whom to start the server.
+ * @param user The username of the user for whom to start the server.
  * @returns A Promise that resolves to a ProgressEvent indicating the server start status.
  */
-export const startServerForUser = async (username: string): Promise<ProgressEvent> => {
+export const startServerForUser = async (user: string | JupyterHubUser): Promise<ProgressEvent> => {
   try {
-    const response = await instance.post(`/hub/api/users/${username}/server`);
-    if (response.status === 201) {
-      return { progress: 100, message: 'Server started', ready: true };
-    } else if (response.status === 202) {
-      return { progress: 0, message: 'Server starting', ready: false };
-    }
-    throw new Error(`Unexpected response status ${response.status} from JupyterHub.`);
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 400) {
-        return { progress: 0, message: 'Server start failed', ready: false };
+    let response: AxiosResponse;
+
+    if (isJupyterHubUser(user)) {
+      const firstServer = Object.values(user.servers)[0];
+      if (firstServer !== undefined && firstServer.ready) {
+        return { progress: 100, message: 'Server started', ready: true };
       }
+      response = await instance.post(`/hub/api/users/${user.name}/server`, {});
+    } else if (typeof user === 'string') {
+      response = await instance.post(`/hub/api/users/${user}/server`, {});
+    } else {
+      throw new Error('Unexpected user parameter.');
+    }
+
+    switch (response.status) {
+      case 201:
+        return { progress: 100, message: 'Server requested', ready: true };
+      case 202:
+        return { progress: 0, message: 'Spawning server...', ready: false };
+      default:
+        throw new Error(`Unexpected response status ${response.status}`);
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 400) {
+      return { progress: 0, message: 'Failed to request server', ready: false };
     }
     throw error;
   }
@@ -46,11 +69,17 @@ export const startServerForUser = async (username: string): Promise<ProgressEven
  * @returns A Promise that resolves to the user data.
  */
 export const getUser = async (username: string): Promise<JupyterHubUser> => {
-  const response = await instance.get<JupyterHubUser>(`/hub/api/users/${username}`);
-  if (response.status !== 200) {
+  const { data, status } = await instance.get<JupyterHubUser>(`/hub/api/users/${username}`);
+
+  if (!isJupyterHubUser(data)) {
+    throw new Error('Jupyter User schema validation failed.');
+  }
+
+  if (status !== 200) {
     throw new Error(`Failed to get user ${username}.`);
   }
-  return response.data;
+
+  return data;
 };
 
 /**
@@ -59,11 +88,17 @@ export const getUser = async (username: string): Promise<JupyterHubUser> => {
  * @returns A Promise that resolves to the user data.
  */
 export const createUser = async (username: string): Promise<JupyterHubUser> => {
-  const response = await instance.post(`/hub/api/users/${username}`);
-  if (response.status !== 201) {
+  const { data, status } = await instance.post<JupyterHubUser>(`/hub/api/users/${username}`, {});
+
+  if (!isJupyterHubUser(data)) {
+    throw new Error('Jupyter User schema validation failed.');
+  }
+
+  if (status !== 201) {
     throw new Error(`Failed to create user ${username}.`);
   }
-  return response.data;
+
+  return data;
 };
 
 /**
@@ -74,7 +109,7 @@ export const createUser = async (username: string): Promise<JupyterHubUser> => {
  * which resolves when the server startup is complete, and can optionally execute a callback
  * function on each progress update and on errors.
  *
- * @param username The username for whom the server startup progress is being tracked.
+ * @param user The username for whom the server startup progress is being tracked.
  * @param onProgressUpdate (Optional) A callback function that is called with a ProgressEvent
  *        object each time a progress update is received from the server. This callback allows
  *        the caller to handle progress updates (e.g., logging progress, updating UI).
@@ -84,33 +119,92 @@ export const createUser = async (username: string): Promise<JupyterHubUser> => {
  * @returns A Promise that resolves when the server startup process is complete. If an error
  *          occurs during the SSE connection or server startup, the Promise is rejected.
  */
-export const serverStartup = async (
-  username: string,
-  onProgressUpdate?: (progressEvent: ProgressEvent) => void,
-  onError?: (error: MessageEvent) => void,
-): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const url = `${baseURL}/hub/api/users/${username}/server/progress`;
-    const eventSource = new EventSource(url, {
-      headers: { Authorization: `token ${token}` },
+export async function* serverProgressAsyncIterator(
+  user: string | JupyterHubUser,
+  options: Options = { retries: 3 },
+): AsyncGenerator<ProgressEvent, void> {
+  try {
+    let serverUrl: string;
+
+    if (isJupyterHubUser(user)) {
+      const { name, servers } = user;
+      const serverKeys = Object.keys(servers);
+      serverUrl =
+        serverKeys.length > 0
+          ? servers[serverKeys[0]].progress_url
+          : `/hub/api/users/${name}/server/progress`;
+    } else {
+      serverUrl = `/hub/api/users/${user}/server/progress`;
+    }
+
+    const response = await instance.get(serverUrl, {
+      headers: {
+        'Accept': 'text/event-stream',
+        'Content-Type': 'application/json',
+      },
+      responseType: 'stream',
     });
 
-    eventSource.onmessage = (event: MessageEvent) => {
-      const data: ProgressEvent = JSON.parse(event.data);
-      onProgressUpdate?.(data);
-      if (data.ready === true) {
-        eventSource.close();
-        resolve();
-      }
-    };
+    const queue: ProgressEvent[] = [];
+    // Ref to resolve the promise later.
+    let resolveQueue: ((value: void | PromiseLike<void>) => void) | null = null;
 
-    eventSource.onerror = (error: MessageEvent) => {
-      onError?.(error);
-      eventSource.close();
-      reject(error);
-    };
-  });
-};
+    const progressEventWriter = new Writable({
+      write(
+        chunk: Buffer,
+        encoding: BufferEncoding,
+        callback: (error?: Error | null | undefined) => void,
+      ) {
+        const text = chunk.toString('utf8');
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const jsonStr = line.substring(5);
+            const progressEvent: unknown = JSON.parse(jsonStr);
+
+            if (!isProgressEvent(progressEvent)) {
+              callback(new Error(`Unexpected progress event: ${jsonStr}`));
+              return;
+            }
+
+            queue.push(progressEvent);
+          }
+        }
+
+        callback();
+      },
+    });
+
+    progressEventWriter.on('error', (error: unknown) => {
+      if (resolveQueue !== null) {
+        resolveQueue(Promise.reject(error));
+      }
+    });
+
+    response.data.pipe(progressEventWriter);
+
+    while (true) {
+      if (queue.length === 0) {
+        await new Promise<void>((resolve) => (resolveQueue = resolve));
+      } else {
+        const progressEvent = queue.shift();
+        if (progressEvent !== undefined) {
+          yield progressEvent;
+        }
+      }
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const errorMessage =
+        error.response?.status === 404
+          ? `User ${typeof user === 'string' ? user : user.name} does not exist.`
+          : 'An error occurred during server progress tracking.';
+      throw new Error(errorMessage);
+    }
+    throw error;
+  }
+}
 
 /**
  * Gets or creates a user in JupyterHub.

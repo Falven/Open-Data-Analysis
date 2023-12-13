@@ -12,7 +12,7 @@ import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
 
 const useHub = true;
-const userId = 'fran';
+const userId = 'tubby';
 const conversationId = randomUUID();
 
 // The name of your Azure OpenAI Resource.
@@ -80,6 +80,13 @@ const chatLoop = async (): Promise<void> => {
 
   rl.on('SIGINT', exit);
 
+  const interpreter = new CodeInterpreter({
+    userId,
+    conversationId,
+    useHub,
+    onDisplayData,
+  });
+
   rl.on('line', async (input: string): Promise<void> => {
     if (input.trim() === '.exit') {
       exit();
@@ -87,13 +94,7 @@ const chatLoop = async (): Promise<void> => {
       try {
         memory.push({ role: 'user', content: input });
 
-        const { name, description, _call, schema } = new CodeInterpreter({
-          userId,
-          conversationId,
-          useHub,
-          onDisplayData,
-        });
-
+        const { name, description, _call, schema } = interpreter;
         const stream = openai.beta.chat.completions.runFunctions({
           model: 'gpt-4-1106-preview',
           messages: memory,
@@ -101,7 +102,7 @@ const chatLoop = async (): Promise<void> => {
             {
               name,
               description,
-              function: _call,
+              function: _call.bind(interpreter),
               parse: (input: string): any => schema.parse(JSON.parse(input)),
               parameters: zodToJsonSchema(schema) as JSONSchema,
             },

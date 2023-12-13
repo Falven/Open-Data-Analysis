@@ -1,19 +1,28 @@
 import { z } from 'zod';
 
-export const INTERPRETER_SANDBOX_PROTOCOL = 'sandbox:/';
+/**
+ * The sandbox protocol.
+ */
+export const SanboxProtocol = 'sandbox:/';
 
 /**
  * Define our OpenAI Function Schema using a Zod Schema.
  */
-export const INTERPRETER_FUNCTION_ZOD_SCHEMA = z.object({
+export const FunctionZodSchema = z.object({
   code: z.string().describe('The python code to execute.'),
 });
 
-export const INTERPRETER_FUNCTION_NAME = 'CodeInterpreter';
+/**
+ * The function name.
+ */
+export const FunctionName = 'CodeInterpreter';
 
-export const interpreterDescriptionTemplate = (
+/**
+ * Define our function schema using Zod.
+ */
+export const DescriptionTemplate = (
   additionalInstructions?: string,
-  sandboxProtocol: string = INTERPRETER_SANDBOX_PROTOCOL,
+  sandboxProtocol: string = SanboxProtocol,
 ): string =>
   `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${sandboxProtocol}' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.${
     additionalInstructions !== undefined

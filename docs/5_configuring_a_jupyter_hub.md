@@ -113,7 +113,7 @@ az network nsg rule create --resource-group my-rg-name \
    --nsg-name my-nsg-name \
    --name "AllowMyIPHttpInbound" \
    --priority 200 \
-   --source-address-prefixes "$(curl ifconfig.me)/32" \
+   --source-address-prefixes "$(curl ifconfig.me)" \
    --destination-port-ranges 80 \
    --access Allow \
    --protocol TCP \
@@ -122,7 +122,7 @@ az network nsg rule create --resource-group my-rg-name \
    --nsg-name my-nsg-name \
    --name "AllowMyIPHttpsInbound" \
    --priority 100 \
-   --source-address-prefixes "$(curl ifconfig.me)/32" \
+   --source-address-prefixes "$(curl ifconfig.me)" \
    --destination-port-ranges 443 \
    --access Allow \
    --protocol TCP \
@@ -282,4 +282,14 @@ You can check if the jupyterhub-idle-culler service is running by running the fo
 kubectl get pods
 # Get the logs of the hub pod
 kubectl logs hub-...
+```
+
+You will be able to see messages like the following:
+
+```shell
+[I 2023-12-12 17:52:35.508 JupyterHub app:3189] Starting managed service jupyterhub-idle-culler-service
+[I 2023-12-12 17:52:35.508 JupyterHub service:385] Starting service 'jupyterhub-idle-culler-service': ['python3', '-m', 'jupyterhub_idle_culler', '--timeout=3600', '--cull-users', '--api-page-size=200']
+
+# And eventually, when it culls a single-user server...
+[I 231213 03:52:36 __init__:362] Culling user fran (inactive for 1:09:58.216145)
 ```

@@ -9,7 +9,8 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "noErrorTruncation": true
   },
   "ts-node": {
     "esm": true,
