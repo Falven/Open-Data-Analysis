@@ -133,8 +133,10 @@ export async function* serverProgressAsyncIterator(
         serverKeys.length > 0
           ? servers[serverKeys[0]].progress_url
           : `/hub/api/users/${name}/server/progress`;
-    } else {
+    } else if (typeof user === 'string') {
       serverUrl = `/hub/api/users/${user}/server/progress`;
+    } else {
+      throw new Error('Unexpected user parameter.');
     }
 
     const response = await instance.get(serverUrl, {
