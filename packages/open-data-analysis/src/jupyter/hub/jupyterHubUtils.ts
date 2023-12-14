@@ -1,3 +1,5 @@
+import http from 'node:http';
+import https from 'node:https';
 import { Transform, Readable, TransformCallback } from 'node:stream';
 import axios, { AxiosProgressEvent, AxiosResponse } from 'axios';
 import { Options } from 'p-retry';
@@ -169,6 +171,7 @@ export const streamServerProgress = async (
     throw new Error('Unexpected user parameter.');
   }
 
+  const timeout = 60000;
   const controller = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -181,18 +184,22 @@ export const streamServerProgress = async (
         responseType: 'stream',
         timeout: 0,
         signal: options?.signal ?? controller.signal,
+        httpAgent: new http.Agent({ keepAlive: true }),
+        httpsAgent: new https.Agent({ keepAlive: true }),
         onDownloadProgress: (_progressEvent: AxiosProgressEvent): void => {
           clearTimeout(timeoutId);
           timeoutId = setTimeout(() => {
             if (controller.signal.aborted === false) {
-              console.log('No message received for 20 seconds, aborting request.');
+              console.log(`No message received for ${timeout / 1000} seconds, aborting request.`);
               controller.abort();
             }
-          }, 20000);
+          }, timeout);
         },
       }),
     options,
   );
+
+  const responseStream = response.data as Readable;
 
   const progressEventTransform = new Transform({
     objectMode: true,
@@ -206,9 +213,14 @@ export const streamServerProgress = async (
             continue;
           }
 
-          const progressEvent = JSON.parse(line.substring(5));
+          const progressEvent: ProgressEvent = JSON.parse(line.substring(5));
+          console.log(progressEvent);
           ProgressEventSchema.parse(progressEvent);
           this.push(progressEvent);
+
+          if (progressEvent?.failed === true) {
+            throw new Error(progressEvent.message);
+          }
 
           if (progressEvent?.ready === true) {
             this.push(null);
@@ -230,7 +242,7 @@ export const streamServerProgress = async (
     },
   });
 
-  response.data.pipe(progressEventTransform);
+  responseStream.pipe(progressEventTransform);
 
   return progressEventTransform as ProgressEventStream;
 };

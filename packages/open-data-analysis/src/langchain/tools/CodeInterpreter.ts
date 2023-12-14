@@ -108,8 +108,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         const progress = await startServerForUser(user);
         if (progress?.ready !== true) {
           const progressEventStream = await streamServerProgress(user);
-          for await (const progressEvent of progressEventStream) {
-            console.log(JSON.stringify(progressEvent));
+          for await (const {} of progressEventStream) {
           }
         }
 

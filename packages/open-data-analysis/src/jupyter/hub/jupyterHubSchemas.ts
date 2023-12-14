@@ -125,8 +125,8 @@ export const isInvolvedObject = (obj: unknown): obj is InvolvedObject => {
 };
 
 const EventSourceSchema = z.object({
-  component: z.string(),
-  host: z.string(),
+  component: z.string().optional(),
+  host: z.string().optional(),
 });
 
 export type EventSource = z.infer<typeof EventSourceSchema>;
@@ -141,12 +141,12 @@ export const isEventSource = (obj: unknown): obj is EventSource => {
 
 const RawProgressEventSchema = z.object({
   kind: z.string().optional(),
-  apiVersion: z.string(),
+  apiVersion: z.string().optional(),
   metadata: MetadataSchema,
   involvedObject: InvolvedObjectSchema,
   reason: z.string(),
   message: z.string(),
-  source: z.record(EventSourceSchema),
+  source: EventSourceSchema,
   firstTimestamp: z.string().nullable(),
   lastTimestamp: z.string().nullable(),
   count: z.number().optional(),
@@ -172,6 +172,7 @@ export const isRawProgressEvent = (obj: unknown): obj is RawProgressEvent => {
  */
 export const ProgressEventSchema = z.object({
   progress: z.number().min(0).max(100),
+  failed: z.boolean().optional(),
   raw_event: RawProgressEventSchema.optional(),
   message: z.string(),
   ready: z.boolean().optional(),
