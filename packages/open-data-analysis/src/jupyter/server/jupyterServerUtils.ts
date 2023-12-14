@@ -26,17 +26,18 @@ import {
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JupyterHubUser, isJupyterHubUser } from '../hub/jupyterHubSchemas.js';
+import axios from 'axios';
 
-const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
-const wsURL = getEnvOrThrow('JUPYTER_WS_URL');
-const token = getEnvOrThrow('JUPYTER_TOKEN');
+const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const WsURL = getEnvOrThrow('JUPYTER_WS_URL');
+const Token = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
  * Create settings for a general, single-user Jupyter server.
  * @returns {ServerConnection.ISettings} The server settings.
  */
 export const createServerSettings = (): ServerConnection.ISettings =>
-  ServerConnection.makeSettings({ baseUrl: baseURL, wsUrl: wsURL, token });
+  ServerConnection.makeSettings({ baseUrl: BaseURL, wsUrl: WsURL, token: Token });
 
 /**
  * Create settings for a Jupyter server for a specific user.
@@ -44,21 +45,14 @@ export const createServerSettings = (): ServerConnection.ISettings =>
  * @returns {ServerConnection.ISettings} The server settings.
  */
 export const createServerSettingsForUser = (
-  user: string | JupyterHubUser,
+  user: JupyterHubUser,
+  token: string = Token,
 ): ServerConnection.ISettings => {
-  let name: string;
-
-  if (isJupyterHubUser(user)) {
-    ({ name } = user);
-  } else if (typeof user === 'string') {
-    name = user;
-  } else {
-    throw new TypeError('Unexpected user parameter.');
-  }
+  const { name } = user;
 
   return ServerConnection.makeSettings({
-    baseUrl: `${baseURL}/user/${name}`,
-    wsUrl: `${wsURL}/user/${name}`,
+    baseUrl: `${BaseURL}/user/${name}`,
+    wsUrl: `${WsURL}/user/${name}`,
     token,
   });
 };

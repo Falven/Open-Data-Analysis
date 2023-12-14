@@ -15,7 +15,7 @@ import pRetry, { Options, FailedAttemptError } from 'p-retry';
  *
  * @returns A Promise that resolves to an AxiosResponse object, containing the response from the Axios request.
  */
-export const createRetryableAxiosRequest = async <T, D>(
+export const createRetryableAxiosRequest = async <T = any, D = any>(
   requestFn: (attemptCount: number) => Promise<AxiosResponse<T, D>>,
   options?: Options,
   nonRetryableStatusCodes: number[] = [],

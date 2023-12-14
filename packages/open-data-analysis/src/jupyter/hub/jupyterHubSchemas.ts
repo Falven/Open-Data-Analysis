@@ -23,10 +23,12 @@ export const JupyterServerDetailsSchema = z.object({
   pending: z.string().nullable(),
   url: z.string(),
   progress_url: z.string(),
-  // ISO 8601 date string
-  started: z.string(),
-  // ISO 8601 date strings
-  last_activity: z.string(),
+  started: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "started"',
+  }),
+  last_activity: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "expires_at"',
+  }),
   state: z.record(z.unknown()).optional(),
   user_options: z.record(JupyterServerStateDetailsSchema),
 });
@@ -48,12 +50,18 @@ export const JupyterHubUserSchema = z.object({
   groups: z.array(z.string()),
   server: z.string().nullable(),
   pending: z.string().nullable(),
-  // ISO 8601 date string
-  last_activity: z.string().nullable(),
+  last_activity: z
+    .string()
+    .refine((date) => !isNaN(Date.parse(date)), {
+      message: 'Invalid date format for "last_activity"',
+    })
+    .nullable(),
   servers: z.record(JupyterServerDetailsSchema),
   auth_state: z.record(z.unknown()).nullable(),
   kind: z.string(),
-  created: z.string(),
+  created: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "created"',
+  }),
 });
 
 export type JupyterHubUser = z.infer<typeof JupyterHubUserSchema>;
@@ -90,7 +98,9 @@ const MetadataSchema = z.object({
   namespace: z.string(),
   uid: z.string(),
   resourceVersion: z.string(),
-  creationTimestamp: z.string(),
+  creationTimestamp: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "creationTimestamp"',
+  }),
   managedFields: z.array(ManagedFieldSchema),
 });
 
@@ -147,11 +157,26 @@ const RawProgressEventSchema = z.object({
   reason: z.string(),
   message: z.string(),
   source: EventSourceSchema,
-  firstTimestamp: z.string().nullable(),
-  lastTimestamp: z.string().nullable(),
+  firstTimestamp: z
+    .string()
+    .refine((date) => !isNaN(Date.parse(date)), {
+      message: 'Invalid date format for "firstTimestamp"',
+    })
+    .nullable(),
+  lastTimestamp: z
+    .string()
+    .refine((date) => !isNaN(Date.parse(date)), {
+      message: 'Invalid date format for "lastTimestamp"',
+    })
+    .nullable(),
   count: z.number().optional(),
   type: z.string(),
-  eventTime: z.string().nullable(),
+  eventTime: z
+    .string()
+    .refine((date) => !isNaN(Date.parse(date)), {
+      message: 'Invalid date format for "eventTime"',
+    })
+    .nullable(),
   action: z.string().optional(),
   reportingComponent: z.string(),
   reportingInstance: z.string(),
@@ -186,6 +211,53 @@ export const isProgressEvent = (obj: unknown): obj is ProgressEvent => {
   const result = ProgressEventSchema.safeParse(obj);
   if (!result.success) {
     console.error('ProgressEvent validation failed:', result.error);
+  }
+  return result.success;
+};
+
+export const CreateTokenRequest = z.object({
+  expires_in: z.number(),
+  note: z.string(),
+  roles: z.array(z.string()),
+  scopes: z.array(z.string()),
+});
+
+export type CreateTokenRequest = z.infer<typeof CreateTokenRequest>;
+
+export const isCreateTokenRequest = (obj: unknown): obj is CreateTokenRequest => {
+  const result = CreateTokenRequest.safeParse(obj);
+  if (!result.success) {
+    console.error('CreateTokenRequest validation failed:', result.error);
+  }
+  return result.success;
+};
+
+export const TokenDetails = z.object({
+  token: z.string(),
+  id: z.string(),
+  user: z.string(),
+  service: z.string(),
+  roles: z.array(z.string()),
+  scopes: z.array(z.string()),
+  note: z.string(),
+  created: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "created"',
+  }),
+  expires_at: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "expires_at"',
+  }),
+  last_activity: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format for "last_activity"',
+  }),
+  session_id: z.string(),
+});
+
+export type TokenDetails = z.infer<typeof TokenDetails>;
+
+export const isTokenDetails = (obj: unknown): obj is TokenDetails => {
+  const result = TokenDetails.safeParse(obj);
+  if (!result.success) {
+    console.error('UserToken validation failed:', result.error);
   }
   return result.success;
 };

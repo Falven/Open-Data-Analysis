@@ -9,7 +9,9 @@ import {
   ProgressEvent,
   ProgressEventSchema,
   isJupyterHubUser,
-  isProgressEvent,
+  isTokenDetails,
+  TokenDetails,
+  CreateTokenRequest,
 } from 'open-data-analysis/jupyter/hub';
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
 import { ZodError } from 'zod';
@@ -21,12 +23,11 @@ const Token = getEnvOrThrow('JUPYTER_TOKEN');
  * Create an axios instance for the JupyterHub API.
  */
 const instance = axios.create({
-  baseURL: BaseURL,
+  baseURL: `${BaseURL}/hub/api`,
   headers: {
     'Authorization': `token ${Token}`,
     'Content-Type': 'application/json',
   },
-  timeout: 2500,
 });
 
 /**
@@ -36,33 +37,20 @@ const instance = axios.create({
  * @returns A Promise that resolves to a ProgressEvent indicating the server start status.
  */
 export const startServerForUser = async (
-  user: string | JupyterHubUser,
+  user: JupyterHubUser,
   options?: Options,
 ): Promise<ProgressEvent> => {
   try {
-    let response: AxiosResponse;
-
-    if (isJupyterHubUser(user)) {
-      const firstServer = Object.values(user.servers)[0];
-      if (firstServer !== undefined && firstServer.ready) {
-        return { progress: 100, message: 'Server started', ready: true };
-      }
-      response = await createRetryableAxiosRequest(
-        async (): Promise<AxiosResponse> =>
-          await instance.post(`/hub/api/users/${user.name}/server`, {}),
-        options,
-        [400],
-      );
-    } else if (typeof user === 'string') {
-      response = await createRetryableAxiosRequest(
-        async (): Promise<AxiosResponse> =>
-          await instance.post(`/hub/api/users/${user}/server`, {}),
-        options,
-        [400],
-      );
-    } else {
-      throw new Error('Unexpected user parameter.');
+    const firstServer = Object.values(user.servers)[0];
+    if (firstServer !== undefined && firstServer.ready) {
+      return { progress: 100, message: 'Server started', ready: true };
     }
+
+    const response = await createRetryableAxiosRequest(
+      async (): Promise<AxiosResponse> => await instance.post(`/users/${user.name}/server`, {}),
+      options,
+      [400],
+    );
 
     switch (response.status) {
       case 201:
@@ -86,9 +74,8 @@ export const startServerForUser = async (
  * @returns A Promise that resolves to the user data.
  */
 export const getUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
-  const { data, status } = await createRetryableAxiosRequest(
-    async (): Promise<AxiosResponse> =>
-      await instance.get<JupyterHubUser>(`/hub/api/users/${username}`),
+  const { data, status } = await createRetryableAxiosRequest<JupyterHubUser>(
+    async (): Promise<AxiosResponse> => await instance.get<JupyterHubUser>(`/users/${username}`),
     options,
     [404],
   );
@@ -110,9 +97,9 @@ export const getUser = async (username: string, options?: Options): Promise<Jupy
  * @returns A Promise that resolves to the user data.
  */
 export const createUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
-  const { data, status } = await createRetryableAxiosRequest(
+  const { data, status } = await createRetryableAxiosRequest<JupyterHubUser>(
     async (): Promise<AxiosResponse> =>
-      await instance.post<JupyterHubUser>(`/hub/api/users/${username}`, {}),
+      await instance.post<JupyterHubUser>(`/users/${username}`, {}),
     options,
   );
 
@@ -153,23 +140,13 @@ export type ProgressEventStream = Readable & {
  * @returns A Promise resolving to a ProgressEventStream that emits progress updates.
  */
 export const streamServerProgress = async (
-  user: string | JupyterHubUser,
+  user: JupyterHubUser,
   options?: Options,
 ): Promise<ProgressEventStream> => {
-  let serverUrl: string;
-
-  if (isJupyterHubUser(user)) {
-    const { name, servers } = user;
-    const serverKeys = Object.keys(servers);
-    serverUrl =
-      serverKeys.length > 0
-        ? servers[serverKeys[0]].progress_url
-        : `/hub/api/users/${name}/server/progress`;
-  } else if (typeof user === 'string') {
-    serverUrl = `/hub/api/users/${user}/server/progress`;
-  } else {
-    throw new Error('Unexpected user parameter.');
-  }
+  const { name, servers } = user;
+  const serverKeys = Object.keys(servers);
+  const serverUrl =
+    serverKeys.length > 0 ? servers[serverKeys[0]].progress_url : `/users/${name}/server/progress`;
 
   const timeout = 60000;
   const controller = new AbortController();
@@ -261,4 +238,136 @@ export const getOrCreateUser = async (username: string): Promise<JupyterHubUser>
     }
     throw error;
   }
+};
+
+/**
+ * Lists any JupyterHub tokens for the provided user.
+ * @param user The user for whom to list tokens.
+ * @returns A Promise that resolves to an array of JupyterHubToken objects.
+ */
+export const listUserTokens = async (
+  user: JupyterHubUser,
+  options?: Options,
+): Promise<TokenDetails[]> => {
+  const { name } = user;
+
+  const { data, status } = await createRetryableAxiosRequest<TokenDetails[], string>(
+    async (): Promise<AxiosResponse> => await instance.get<TokenDetails[]>(`/users/${name}/tokens`),
+    options,
+  );
+
+  if (!data.every(isTokenDetails)) {
+    throw new Error('Jupyter User schema validation failed.');
+  }
+
+  switch (status) {
+    case 200:
+      break;
+    case 401:
+      throw new Error(`Authentication/Authorization error: ${name}.`);
+    case 404:
+      throw new Error(`No such user: ${name}.`);
+    default:
+      throw new Error(`Failed to get tokens for user ${name}.`);
+  }
+
+  return data;
+};
+
+/**
+ * Creates a new JupyterHub token for the provided user.
+ * @param user The user for whom to create a token.
+ * @returns A Promise that resolves to a JupyterHubToken object.
+ */
+export const createUserToken = async (
+  user: JupyterHubUser,
+  options?: Options,
+): Promise<TokenDetails> => {
+  const { name } = user;
+
+  const { data, status } = await createRetryableAxiosRequest<TokenDetails>(
+    async (): Promise<AxiosResponse> =>
+      await instance.post<TokenDetails, AxiosResponse<TokenDetails>, CreateTokenRequest>(
+        `/users/${name}/tokens`,
+        {
+          expires_in: 3600, // 3600s or 1 hour
+          note: 'Generated by Code Interpreter',
+          roles: ['user'],
+          scopes: [
+            'self',
+            'read:servers',
+            'execute:servers',
+            'read:users:servers',
+            'write:users:servers',
+            'upload:users:servers',
+          ],
+        },
+      ),
+    options,
+  );
+
+  if (!isTokenDetails(data)) {
+    throw new Error('Jupyter Token schema validation failed.');
+  }
+
+  switch (status) {
+    case 201:
+      break;
+    case 400:
+      throw new Error('Body must be a JSON dict or empty.');
+    case 403:
+      throw new Error('Requested role does not exist.');
+    default:
+      throw new Error(`Failed to create token for user ${name}.`);
+  }
+
+  return data;
+};
+
+export const deleteUserToken = async (
+  user: JupyterHubUser,
+  tokenId: string,
+  options?: Options,
+): Promise<void> => {
+  const { name } = user;
+
+  const { status } = await createRetryableAxiosRequest(
+    async (): Promise<AxiosResponse> => await instance.delete(`/users/${name}/tokens/${tokenId}`),
+    options,
+  );
+
+  switch (status) {
+    case 204:
+      break;
+    case 404:
+      throw new Error(`No such token: ${tokenId}.`);
+    default:
+      throw new Error(`Failed to delete token ${tokenId} for user ${name}.`);
+  }
+};
+
+/**
+ * Gets or renews a JupyterHub token for the provided user.
+ * @param user The user for whom to get or renew a token.
+ * @param options Optional configuration options for the request.
+ * @returns A Promise that resolves to a JupyterHubToken object.
+ */
+export const getOrRenewUserToken = async (
+  user: JupyterHubUser,
+  options?: Options,
+): Promise<TokenDetails> => {
+  const tokens = await listUserTokens(user, options);
+  const deletePromises: Promise<void>[] = [];
+
+  const validTokens = tokens.filter((token: TokenDetails) => {
+    if (new Date(token.expires_at) < new Date()) {
+      deletePromises.push(deleteUserToken(user, token.id, options));
+      return false;
+    }
+    return true;
+  });
+
+  await Promise.allSettled(deletePromises);
+
+  return validTokens.length > 0 ? validTokens[0] : await createUserToken(user, options);
 };

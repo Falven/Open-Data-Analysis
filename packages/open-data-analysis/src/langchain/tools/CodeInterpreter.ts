@@ -23,6 +23,7 @@ import {
   getOrCreateUser,
   streamServerProgress,
   startServerForUser,
+  getOrRenewUserToken,
 } from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
 import {
@@ -104,6 +105,8 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         // Get or create the JupyterHub user if it does not exist.
         const user = await getOrCreateUser(this.userId);
 
+        const { token } = await getOrRenewUserToken(user);
+
         // Start the JupyterHub server for the user if it is not already running.
         const progress = await startServerForUser(user);
         if (progress?.ready !== true) {
@@ -113,7 +116,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         }
 
         // Create Jupyter Hub server settings.
-        serverSettings = createServerSettingsForUser(user);
+        serverSettings = createServerSettingsForUser(user, token);
       } else {
         // Create single user Jupyter server settings.
         serverSettings = createServerSettings();
