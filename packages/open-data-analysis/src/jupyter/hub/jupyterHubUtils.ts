@@ -1,14 +1,16 @@
-import axios, { AxiosResponse } from 'axios';
-import EventSource from 'eventsource';
+import { Transform, Readable, TransformCallback } from 'node:stream';
+import axios, { AxiosProgressEvent, AxiosResponse } from 'axios';
 import { Options } from 'p-retry';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import {
   JupyterHubUser,
   ProgressEvent,
+  ProgressEventSchema,
   isJupyterHubUser,
   isProgressEvent,
 } from 'open-data-analysis/jupyter/hub';
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
+import { ZodError } from 'zod';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const Token = getEnvOrThrow('JUPYTER_TOKEN');
@@ -124,23 +126,34 @@ export const createUser = async (username: string, options?: Options): Promise<J
 };
 
 /**
- * Asynchronously retrieves the server progress for a specific user using Server-Sent Events (SSE).
- *
- * This function connects to the JupyterHub API and streams server startup progress events using SSE.
- * It processes the incoming events, extracting and transforming each progress event into a consumable object.
- *
- * @param user The username (string) or JupyterHubUser object for whom the server startup progress
- *        is being tracked. This determines the server URL for the SSE connection.
- *
- * @param options (Optional) Configuration options for the request.
- *
- * @returns An asynchronous generator (AsyncGenerator) that yields server progress updates as objects.
- *          If an error occurs in setting up the stream or during data processing, the generator will throw an error.
+ * Represents a stream of ProgressEvent messages from a JupyterHub.
  */
-export async function* streamServerProgress(
+export type ProgressEventStream = Readable & {
+  read(size?: number): ProgressEvent;
+  [Symbol.asyncIterator](): AsyncIterableIterator<ProgressEvent>;
+};
+
+/**
+ * Retrieves server startup progress for a user from JupyterHub as a stream of events.
+ *
+ * This function connects to the JupyterHub API and returns a stream that emits server startup progress events.
+ * Each event in the stream is an object representing a progress update. The function handles SSE (Server-Sent Events)
+ * and includes a 20-second timeout mechanism. If no event is received within this period, the stream is automatically aborted.
+ *
+ * The function is designed to handle and emit validation errors (using Zod) without terminating the stream.
+ * For other types of errors, the stream will be terminated and the errors will be emitted.
+ *
+ * Usage note: Consumers of this function should handle error events emitted by the stream.
+ *
+ * @param user A username (string) or JupyterHubUser object to track server progress for.
+ * @param options Optional configuration options for the request.
+ *
+ * @returns A Promise resolving to a ProgressEventStream that emits progress updates.
+ */
+export const streamServerProgress = async (
   user: string | JupyterHubUser,
   options?: Options,
-): AsyncGenerator<ProgressEvent, void> {
+): Promise<ProgressEventStream> => {
   let serverUrl: string;
 
   if (isJupyterHubUser(user)) {
@@ -149,41 +162,78 @@ export async function* streamServerProgress(
     serverUrl =
       serverKeys.length > 0
         ? servers[serverKeys[0]].progress_url
-        : `${BaseURL}/hub/api/users/${name}/server/progress`;
+        : `/hub/api/users/${name}/server/progress`;
   } else if (typeof user === 'string') {
-    serverUrl = `${BaseURL}/hub/api/users/${user}/server/progress`;
+    serverUrl = `/hub/api/users/${user}/server/progress`;
   } else {
     throw new Error('Unexpected user parameter.');
   }
 
-  const eventSource = new EventSource(serverUrl, {
-    headers: { Authorization: `token ${Token}` },
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  const response = await createRetryableAxiosRequest(
+    async (): Promise<AxiosResponse> =>
+      await instance.get(serverUrl, {
+        headers: {
+          Accept: 'text/event-stream',
+        },
+        responseType: 'stream',
+        timeout: 0,
+        signal: options?.signal ?? controller.signal,
+        onDownloadProgress: (_progressEvent: AxiosProgressEvent): void => {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            if (controller.signal.aborted === false) {
+              console.log('No message received for 20 seconds, aborting request.');
+              controller.abort();
+            }
+          }, 20000);
+        },
+      }),
+    options,
+  );
+
+  const progressEventTransform = new Transform({
+    objectMode: true,
+    write(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback): void {
+      try {
+        let text = chunk.toString('utf8');
+        const lines = text.split('\n\n');
+
+        for (const line of lines) {
+          if (!line.startsWith('data:')) {
+            continue;
+          }
+
+          const progressEvent = JSON.parse(line.substring(5));
+          ProgressEventSchema.parse(progressEvent);
+          this.push(progressEvent);
+
+          if (progressEvent?.ready === true) {
+            this.push(null);
+            clearTimeout(timeoutId);
+            break;
+          }
+        }
+      } catch (error: unknown) {
+        if (error instanceof ZodError) {
+          this.emit('error', error);
+        } else {
+          this.push(null);
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      }
+
+      callback();
+    },
   });
 
-  while (eventSource.readyState !== EventSource.CLOSED) {
-    yield await new Promise<ProgressEvent>((resolve, reject): void => {
-      eventSource.onmessage = (event: MessageEvent<string>) => {
-        const progressEvent: unknown = JSON.parse(event.data);
+  response.data.pipe(progressEventTransform);
 
-        if (!isProgressEvent(progressEvent)) {
-          reject(new Error('Unexpected progress event.'));
-          return;
-        }
-
-        resolve(progressEvent);
-
-        if (progressEvent?.ready === true) {
-          eventSource.close();
-        }
-      };
-
-      eventSource.onerror = (error: MessageEvent) => {
-        eventSource.close();
-        reject(error);
-      };
-    });
-  }
-}
+  return progressEventTransform as ProgressEventStream;
+};
 
 /**
  * Gets or creates a user in JupyterHub.

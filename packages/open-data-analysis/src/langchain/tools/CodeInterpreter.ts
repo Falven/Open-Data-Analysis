@@ -107,7 +107,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         // Start the JupyterHub server for the user if it is not already running.
         const progress = await startServerForUser(user);
         if (progress?.ready !== true) {
-          const progressEventStream = streamServerProgress(user);
+          const progressEventStream = await streamServerProgress(user);
           for await (const progressEvent of progressEventStream) {
             console.log(JSON.stringify(progressEvent));
           }

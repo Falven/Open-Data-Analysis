@@ -10,27 +10,10 @@ import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
-import {
-  getOrCreateUser,
-  startServerForUser,
-  streamServerProgress,
-} from 'open-data-analysis/jupyter/hub';
 
 const useHub = true;
-const userId = randomUUID();
+const userId = 'fran';
 const conversationId = randomUUID();
-
-// Get or create the JupyterHub user if it does not exist.
-const user = await getOrCreateUser(userId);
-
-// Start the JupyterHub server for the user if it is not already running.
-const progress = await startServerForUser(user);
-if (progress?.ready !== true) {
-  const progressEventStream = streamServerProgress(user);
-  for await (const progressEvent of progressEventStream) {
-    console.log(JSON.stringify(progressEvent));
-  }
-}
 
 // The name of your Azure OpenAI Resource.
 // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
