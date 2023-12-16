@@ -24,25 +24,25 @@ import {
   getOrCreateUser,
   streamServerProgress,
   startServerForUser,
-  ProgressEvent,
 } from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
 import {
   CodeInterpreterOptions,
-  CodeInterpreterZodSchema,
   FunctionName,
-  FunctionZodSchema,
   DescriptionTemplate,
-} from 'open-data-analysis/interpreter';
+  CodeInterpreterFunctionSchemaType,
+  CodeInterpreterFunctionSchema,
+  CodeInterpreterFunction,
+} from 'open-data-analysis/tools';
 
 /**
  * A simple example on how to use Jupyter server as a code interpreter.
  */
-export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
+export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchemaType> {
   name: string;
   description: string;
   description_for_model: string;
-  schema: CodeInterpreterZodSchema;
+  schema: CodeInterpreterFunctionSchemaType;
   onServerStartup?: ServerStartupCallback;
   onDisplayData?: DisplayCallback;
 
@@ -77,7 +77,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     this.name = FunctionName;
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model = this.description = DescriptionTemplate(instructions);
-    this.schema = FunctionZodSchema;
+    this.schema = CodeInterpreterFunctionSchema;
     this.onServerStartup = onServerStartup;
     this.onDisplayData = onDisplayData;
 
@@ -95,7 +95,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
    * @param arg The code to execute.
    * @returns The code execution output.
    */
-  async _call({ code }: z.infer<CodeInterpreterZodSchema>): Promise<string> {
+  async _call({ code }: CodeInterpreterFunction): Promise<string> {
     if (code === undefined) {
       return renderTextDescriptionAndArgs([this]);
     }

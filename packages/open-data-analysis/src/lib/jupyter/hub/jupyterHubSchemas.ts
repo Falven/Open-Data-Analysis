@@ -215,24 +215,24 @@ export const isProgressEvent = (obj: unknown): obj is ProgressEvent => {
   return result.success;
 };
 
-export const CreateTokenRequest = z.object({
+export const CreateTokenRequestSchema = z.object({
   expires_in: z.number(),
   note: z.string(),
   roles: z.array(z.string()),
   scopes: z.array(z.string()),
 });
 
-export type CreateTokenRequest = z.infer<typeof CreateTokenRequest>;
+export type CreateTokenRequest = z.infer<typeof CreateTokenRequestSchema>;
 
 export const isCreateTokenRequest = (obj: unknown): obj is CreateTokenRequest => {
-  const result = CreateTokenRequest.safeParse(obj);
+  const result = CreateTokenRequestSchema.safeParse(obj);
   if (!result.success) {
     console.error('CreateTokenRequest validation failed:', result.error);
   }
   return result.success;
 };
 
-export const TokenDetails = z.object({
+export const TokenDetailsSchema = z.object({
   token: z.string(),
   id: z.string(),
   user: z.string(),
@@ -252,10 +252,10 @@ export const TokenDetails = z.object({
   session_id: z.string(),
 });
 
-export type TokenDetails = z.infer<typeof TokenDetails>;
+export type TokenDetails = z.infer<typeof TokenDetailsSchema>;
 
 export const isTokenDetails = (obj: unknown): obj is TokenDetails => {
-  const result = TokenDetails.safeParse(obj);
+  const result = TokenDetailsSchema.safeParse(obj);
   if (!result.success) {
     console.error('UserToken validation failed:', result.error);
   }

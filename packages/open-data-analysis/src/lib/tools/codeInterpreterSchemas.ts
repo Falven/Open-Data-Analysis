@@ -1,5 +1,5 @@
 import { DisplayCallback, ServerStartupCallback } from 'open-data-analysis/jupyter/server';
-import { FunctionZodSchema } from 'open-data-analysis/interpreter';
+import { z } from 'zod';
 
 export type CodeInterpreterOptions = {
   /**
@@ -33,6 +33,12 @@ export type CodeInterpreterOptions = {
 };
 
 /**
- * Get the type of the Zod schema.
+ * Define our OpenAI Function Schema using a Zod Schema.
  */
-export type CodeInterpreterZodSchema = typeof FunctionZodSchema;
+export const CodeInterpreterFunctionSchema = z.object({
+  code: z.string().describe('The python code to execute.'),
+});
+
+export type CodeInterpreterFunctionSchemaType = typeof CodeInterpreterFunctionSchema;
+
+export type CodeInterpreterFunction = z.infer<CodeInterpreterFunctionSchemaType>;

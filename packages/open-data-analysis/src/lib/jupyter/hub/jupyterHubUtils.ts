@@ -10,9 +10,9 @@ import {
   ProgressEvent,
   isJupyterHubUser,
   isTokenDetails,
+  isProgressEvent,
   TokenDetails,
   CreateTokenRequest,
-  isProgressEvent,
 } from 'open-data-analysis/jupyter/hub';
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
 

@@ -12,10 +12,10 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs"
     },
-    "./interpreter": {
-      "types": "./dist/types/interpreter/index.d.ts",
-      "import": "./dist/esm/interpreter/index.js",
-      "require": "./dist/cjs/interpreter/index.cjs"
+    "./tools": {
+      "types": "./dist/types/tools/index.d.ts",
+      "import": "./dist/esm/tools/index.js",
+      "require": "./dist/cjs/tools/index.cjs"
     },
     "./jupyter/server": {
       "types": "./dist/types/jupyter/server/index.d.ts",

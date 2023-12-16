@@ -6,11 +6,12 @@ import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
+import { CodeInterpreter, CodeInterpreterFunction } from 'open-data-analysis/tools';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback, ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
+import { RunnableFunctionWithParse } from 'openai/resources/beta/chat/completions.mjs';
 
 const useHub = true;
 const userId = 'fran';
@@ -113,18 +114,20 @@ const chatLoop = async (): Promise<void> => {
 
         const { name, description, _call, schema } = interpreter;
 
+        const functions: readonly RunnableFunctionWithParse<CodeInterpreterFunction>[] = [
+          {
+            function: _call.bind(interpreter),
+            parse: (input: string): any => schema.parse(JSON.parse(input)),
+            parameters: zodToJsonSchema(schema) as JSONSchema,
+            description,
+            name,
+          },
+        ];
+
         const stream = openai.beta.chat.completions.runFunctions({
           model: 'gpt-4-1106-preview',
           messages: memory,
-          functions: [
-            {
-              name,
-              description,
-              function: _call.bind(interpreter),
-              parse: (input: string): any => schema.parse(JSON.parse(input)),
-              parameters: zodToJsonSchema(schema) as JSONSchema,
-            },
-          ],
+          functions,
           stream: true,
         });
 

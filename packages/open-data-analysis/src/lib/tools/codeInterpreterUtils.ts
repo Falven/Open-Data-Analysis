@@ -6,13 +6,6 @@ import { z } from 'zod';
 export const SanboxProtocol = 'sandbox:/';
 
 /**
- * Define our OpenAI Function Schema using a Zod Schema.
- */
-export const FunctionZodSchema = z.object({
-  code: z.string().describe('The python code to execute.'),
-});
-
-/**
  * The function name.
  */
 export const FunctionName = 'CodeInterpreter';
