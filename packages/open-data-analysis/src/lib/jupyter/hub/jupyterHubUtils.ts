@@ -3,18 +3,18 @@ import https from 'node:https';
 import { Transform, Readable, TransformCallback } from 'node:stream';
 import axios, { AxiosProgressEvent, AxiosResponse } from 'axios';
 import { Options } from 'p-retry';
+import { ZodError } from 'zod';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import {
   JupyterHubUser,
   ProgressEvent,
-  ProgressEventSchema,
   isJupyterHubUser,
   isTokenDetails,
   TokenDetails,
   CreateTokenRequest,
+  isProgressEvent,
 } from 'open-data-analysis/jupyter/hub';
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
-import { ZodError } from 'zod';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const Token = getEnvOrThrow('JUPYTER_TOKEN');
@@ -30,6 +30,25 @@ const instance = axios.create({
   },
 });
 
+export const ProgressStartedEvent: ProgressEvent = {
+  progress: 0,
+  message: 'Server starting...',
+  ready: false,
+};
+
+export const ProgressFailedEvent: ProgressEvent = {
+  progress: 0,
+  message: 'Server failed to start.',
+  ready: false,
+  failed: true,
+};
+
+export const ProgressFinishedEvent: ProgressEvent = {
+  progress: 100,
+  message: 'Server started.',
+  ready: true,
+};
+
 /**
  * Starts a single-user notebook server for the specified user.
  *
@@ -43,7 +62,7 @@ export const startServerForUser = async (
   try {
     const firstServer = Object.values(user.servers)[0];
     if (firstServer !== undefined && firstServer.ready) {
-      return { progress: 100, message: 'Server started', ready: true };
+      return ProgressFinishedEvent;
     }
 
     const response = await createRetryableAxiosRequest(
@@ -54,15 +73,15 @@ export const startServerForUser = async (
 
     switch (response.status) {
       case 201:
-        return { progress: 100, message: 'Server requested', ready: true };
+        return ProgressFinishedEvent;
       case 202:
-        return { progress: 0, message: 'Spawning server...', ready: false };
+        return ProgressStartedEvent;
       default:
         throw new Error(`Unexpected response status ${response.status}`);
     }
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 400) {
-      return { progress: 0, message: 'Failed to request server', ready: false };
+      return ProgressFailedEvent;
     }
     throw error;
   }
@@ -80,13 +99,11 @@ export const getUser = async (username: string, options?: Options): Promise<Jupy
     [404],
   );
 
-  if (!isJupyterHubUser(data)) {
-    throw new Error('Jupyter User schema validation failed.');
-  }
-
   if (status !== 200) {
     throw new Error(`Failed to get user ${username}.`);
   }
+
+  isJupyterHubUser(data);
 
   return data;
 };
@@ -103,13 +120,11 @@ export const createUser = async (username: string, options?: Options): Promise<J
     options,
   );
 
-  if (!isJupyterHubUser(data)) {
-    throw new Error('Jupyter User schema validation failed.');
-  }
-
   if (status !== 201) {
     throw new Error(`Failed to create user ${username}.`);
   }
+
+  isJupyterHubUser(data);
 
   return data;
 };
@@ -155,9 +170,7 @@ export const streamServerProgress = async (
   const response = await createRetryableAxiosRequest(
     async (): Promise<AxiosResponse> =>
       await instance.get(serverUrl, {
-        headers: {
-          Accept: 'text/event-stream',
-        },
+        headers: { Accept: 'text/event-stream' },
         responseType: 'stream',
         timeout: 0,
         signal: options?.signal ?? controller.signal,
@@ -168,7 +181,9 @@ export const streamServerProgress = async (
           timeoutId = setTimeout(() => {
             if (controller.signal.aborted === false) {
               console.log(`No message received for ${timeout / 1000} seconds, aborting request.`);
+              clearTimeout(timeoutId);
               controller.abort();
+              responseStream.destroy();
             }
           }, timeout);
         },
@@ -178,21 +193,24 @@ export const streamServerProgress = async (
 
   const responseStream = response.data as Readable;
 
+  let buffer: string = '';
   const progressEventTransform = new Transform({
     objectMode: true,
     write(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback): void {
-      try {
-        let text = chunk.toString('utf8');
-        const lines = text.split('\n\n');
+      buffer += chunk.toString('utf8');
 
-        for (const line of lines) {
-          if (!line.startsWith('data:')) {
+      let endIndex: number;
+      while ((endIndex = buffer.indexOf('\n\n')) !== -1) {
+        const sse = buffer.substring(0, endIndex);
+        buffer = buffer.substring(endIndex + 2);
+
+        try {
+          if (!sse.startsWith('data:')) {
             continue;
           }
 
-          const progressEvent: ProgressEvent = JSON.parse(line.substring(5));
-          console.log(progressEvent);
-          ProgressEventSchema.parse(progressEvent);
+          const progressEvent: ProgressEvent = JSON.parse(sse.substring(5));
+          isProgressEvent(progressEvent);
           this.push(progressEvent);
 
           if (progressEvent?.failed === true) {
@@ -201,17 +219,19 @@ export const streamServerProgress = async (
 
           if (progressEvent?.ready === true) {
             this.push(null);
+            responseStream.destroy();
             clearTimeout(timeoutId);
             break;
           }
-        }
-      } catch (error: unknown) {
-        if (error instanceof ZodError) {
-          this.emit('error', error);
-        } else {
-          this.push(null);
-          clearTimeout(timeoutId);
-          throw error;
+        } catch (error: unknown) {
+          if (error instanceof ZodError) {
+            this.emit('error', error);
+          } else {
+            this.push(null);
+            responseStream.destroy();
+            clearTimeout(timeoutId);
+            throw error;
+          }
         }
       }
 
@@ -254,19 +274,14 @@ export const listUserTokens = async (
   const { data, status } = await createRetryableAxiosRequest<TokenDetails[], string>(
     async (): Promise<AxiosResponse> => await instance.get<TokenDetails[]>(`/users/${name}/tokens`),
     options,
+    [401, 404],
   );
 
-  if (!data.every(isTokenDetails)) {
-    throw new Error('Jupyter User schema validation failed.');
-  }
+  data.every(isTokenDetails);
 
   switch (status) {
     case 200:
       break;
-    case 401:
-      throw new Error(`Authentication/Authorization error: ${name}.`);
-    case 404:
-      throw new Error(`No such user: ${name}.`);
     default:
       throw new Error(`Failed to get tokens for user ${name}.`);
   }
@@ -304,19 +319,14 @@ export const createUserToken = async (
         },
       ),
     options,
+    [400, 403],
   );
 
-  if (!isTokenDetails(data)) {
-    throw new Error('Jupyter Token schema validation failed.');
-  }
+  isTokenDetails(data);
 
   switch (status) {
     case 201:
       break;
-    case 400:
-      throw new Error('Body must be a JSON dict or empty.');
-    case 403:
-      throw new Error('Requested role does not exist.');
     default:
       throw new Error(`Failed to create token for user ${name}.`);
   }
@@ -334,13 +344,12 @@ export const deleteUserToken = async (
   const { status } = await createRetryableAxiosRequest(
     async (): Promise<AxiosResponse> => await instance.delete(`/users/${name}/tokens/${tokenId}`),
     options,
+    [404],
   );
 
   switch (status) {
     case 204:
       break;
-    case 404:
-      throw new Error(`No such token: ${tokenId}.`);
     default:
       throw new Error(`Failed to delete token ${tokenId} for user ${name}.`);
   }

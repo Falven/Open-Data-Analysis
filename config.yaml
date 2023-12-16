@@ -35,10 +35,10 @@ hub:
     user-admin-role:
       description: 'Role to manage users and their servers'
       scopes:
-        - 'list:users'
-        - 'read:users'
-        - 'admin:users'
-        - 'servers'
+        - 'admin:users' # Read, write, create and delete users and their authentication state, not including their servers or tokens.
+        - 'tokens' # Read, write, create and delete user tokens.
+        - 'admin:servers' # Read, start, stop, create and delete user servers and their state.
+        - 'access:servers' # Access user servers via API or browser.
       services: ['myapi']
 imagePullSecrets:
   - name: cr-myacr

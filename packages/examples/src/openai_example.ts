@@ -8,11 +8,12 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
-import { DisplayCallback } from 'open-data-analysis/jupyter/server';
+import { DisplayCallback, ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
+import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
 
 const useHub = true;
-const userId = randomUUID();
+const userId = 'fran';
 const conversationId = randomUUID();
 
 // The name of your Azure OpenAI Resource.
@@ -55,6 +56,21 @@ const onDisplayData: DisplayCallback = (base64ImageData: string): string | undef
   return;
 };
 
+const onServerStartup: ServerStartupCallback = (progressEvent: ProgressEvent) => {
+  const { progress } = progressEvent;
+  const barLength = 20;
+  const filledBarLength = Math.round((progress / 100) * barLength);
+  const emptyBarLength = barLength - filledBarLength;
+
+  const filledBar = '='.repeat(filledBarLength);
+  const emptyBar = '-'.repeat(emptyBarLength);
+  const displayBar = `[${filledBar}${emptyBar}]`;
+
+  process.stdout.write(
+    `\r${userId}'s server is starting ${displayBar} ${progress}%${progressEvent.ready ? '\n' : ''}`,
+  );
+};
+
 const memory: ChatCompletionMessageParam[] = [
   {
     role: 'system',
@@ -84,6 +100,7 @@ const chatLoop = async (): Promise<void> => {
     userId,
     conversationId,
     useHub,
+    onServerStartup,
     onDisplayData,
   });
 
@@ -95,6 +112,7 @@ const chatLoop = async (): Promise<void> => {
         memory.push({ role: 'user', content: input });
 
         const { name, description, _call, schema } = interpreter;
+
         const stream = openai.beta.chat.completions.runFunctions({
           model: 'gpt-4-1106-preview',
           messages: memory,

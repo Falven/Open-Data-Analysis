@@ -1,4 +1,4 @@
-import { DisplayCallback } from 'open-data-analysis/jupyter/server';
+import { DisplayCallback, ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { FunctionZodSchema } from 'open-data-analysis/interpreter';
 
 export type CodeInterpreterOptions = {
@@ -15,7 +15,11 @@ export type CodeInterpreterOptions = {
    */
   useHub?: boolean;
   /**
-   * A callback to be invoked whenever an figure is generated.
+   * A callback invoked as a single-user server is starting up.
+   */
+  onServerStartup?: ServerStartupCallback;
+  /**
+   * A callback invoked whenever an figure is generated.
    */
   onDisplayData?: DisplayCallback;
   /**

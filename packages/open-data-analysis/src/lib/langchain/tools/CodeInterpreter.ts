@@ -17,13 +17,14 @@ import {
   createServerSettings,
   createServerSettingsForUser,
   sanitizeUserId,
+  ServerStartupCallback,
   DisplayCallback,
 } from 'open-data-analysis/jupyter/server';
 import {
   getOrCreateUser,
   streamServerProgress,
   startServerForUser,
-  getOrRenewUserToken,
+  ProgressEvent,
 } from 'open-data-analysis/jupyter/hub';
 import { replaceSandboxProtocolWithDirectory } from 'open-data-analysis/utils';
 import {
@@ -38,20 +39,20 @@ import {
  * A simple example on how to use Jupyter server as a code interpreter.
  */
 export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
-  userId: string;
-  conversationId: string;
-  useHub?: boolean;
-  onDisplayData?: DisplayCallback;
-  sandboxDirectory: string;
-  persistExecutions: boolean;
-
-  schema: CodeInterpreterZodSchema;
   name: string;
   description: string;
   description_for_model: string;
+  schema: CodeInterpreterZodSchema;
+  onServerStartup?: ServerStartupCallback;
+  onDisplayData?: DisplayCallback;
 
-  notebookName: string;
-  notebookPath: string;
+  private userId: string;
+  private conversationId: string;
+  private useHub?: boolean;
+  private persistExecutions: boolean;
+  private sandboxDirectory: string;
+  private notebookName: string;
+  private notebookPath: string;
 
   static lc_name() {
     return 'CodeInterpreter';
@@ -65,25 +66,26 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
     userId,
     conversationId,
     useHub,
+    onServerStartup,
     onDisplayData,
     instructions,
     persistExecutions = true,
   }: CodeInterpreterOptions) {
     super();
 
-    this.userId = sanitizeUserId(userId);
-    this.conversationId = conversationId;
-    this.useHub = useHub;
-    this.onDisplayData = onDisplayData;
-    this.sandboxDirectory = this.useHub ? '' : this.userId;
-    this.persistExecutions = persistExecutions;
-
-    this.schema = FunctionZodSchema;
     // OpenAI functions use the Tool name to gain additional insights.
     this.name = FunctionName;
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model = this.description = DescriptionTemplate(instructions);
+    this.schema = FunctionZodSchema;
+    this.onServerStartup = onServerStartup;
+    this.onDisplayData = onDisplayData;
 
+    this.userId = sanitizeUserId(userId);
+    this.conversationId = conversationId;
+    this.useHub = useHub;
+    this.persistExecutions = persistExecutions;
+    this.sandboxDirectory = this.useHub ? '' : this.userId;
     this.notebookName = `${this.conversationId}.ipynb`;
     this.notebookPath = posix.join(this.sandboxDirectory, this.notebookName);
   }
@@ -105,18 +107,17 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterZodSchema> {
         // Get or create the JupyterHub user if it does not exist.
         const user = await getOrCreateUser(this.userId);
 
-        const { token } = await getOrRenewUserToken(user);
-
         // Start the JupyterHub server for the user if it is not already running.
-        const progress = await startServerForUser(user);
-        if (progress?.ready !== true) {
+        const serverStatus = await startServerForUser(user);
+        if (serverStatus?.ready !== true) {
           const progressEventStream = await streamServerProgress(user);
-          for await (const {} of progressEventStream) {
+          for await (const progressEvent of progressEventStream) {
+            this.onServerStartup?.(progressEvent);
           }
         }
 
         // Create Jupyter Hub server settings.
-        serverSettings = createServerSettingsForUser(user, token);
+        serverSettings = createServerSettingsForUser(user);
       } else {
         // Create single user Jupyter server settings.
         serverSettings = createServerSettings();

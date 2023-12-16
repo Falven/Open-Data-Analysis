@@ -1,3 +1,10 @@
+import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
+
+/**
+ * A callback invoked as a single-user server is starting up.
+ */
+export type ServerStartupCallback = (progressEvent: ProgressEvent) => void;
+
 /**
  * A callback invoked whenever a figure is generated.
  * @param figureName The name of the generated figure.

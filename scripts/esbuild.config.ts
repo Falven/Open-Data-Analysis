@@ -1,6 +1,6 @@
+import { ChildProcess, spawn } from 'node:child_process';
 import { BuildOptions, OnResolveArgs, Plugin, PluginBuild, build, context } from 'esbuild';
 import { glob } from 'glob';
-import { ChildProcess, spawn } from 'node:child_process';
 
 const args = process.argv.slice(2);
 const externalArg = '--external-';
