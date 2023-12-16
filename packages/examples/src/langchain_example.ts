@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
-import { AgentStep, BaseMessage } from 'langchain/schema';
+import { AIMessage, AgentAction, AgentFinish, AgentStep, BaseMessage } from 'langchain/schema';
 import { RunnablePassthrough, RunnableSequence } from 'langchain/schema/runnable';
 import { StructuredTool, formatToOpenAITool } from 'langchain/tools';
 import {
@@ -120,7 +120,10 @@ const agent = RunnableSequence.from([
   // Invoke the LLM.
   modelWithTools,
   // Parse the output.
-  new OpenAIToolsAgentOutputParser(),
+  (message: AIMessage): Promise<AgentAction[] | AgentFinish> => {
+    message.content;
+    return new OpenAIToolsAgentOutputParser().invoke(message);
+  },
 ]).withConfig({ runName: 'OpenAIToolsAgent' });
 
 /**

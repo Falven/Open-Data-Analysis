@@ -33,7 +33,7 @@ import {
   CodeInterpreterFunctionSchemaType,
   CodeInterpreterFunctionSchema,
   CodeInterpreterFunction,
-} from 'open-data-analysis/tools';
+} from 'open-data-analysis/langchain/tools';
 
 /**
  * A simple example on how to use Jupyter server as a code interpreter.

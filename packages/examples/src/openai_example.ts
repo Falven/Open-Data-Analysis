@@ -5,13 +5,12 @@ import { createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions';
-import { CodeInterpreter, CodeInterpreterFunction } from 'open-data-analysis/tools';
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { CodeInterpreter, CodeInterpreterFunction } from 'open-data-analysis/langchain/tools';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback, ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
-import { RunnableFunctionWithParse } from 'openai/resources/beta/chat/completions.mjs';
 import { RunnableTools } from 'openai/lib/RunnableFunction.mjs';
 
 const useHub = true;
