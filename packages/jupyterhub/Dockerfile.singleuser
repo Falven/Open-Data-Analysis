@@ -1,0 +1,5 @@
+FROM quay.io/jupyterhub/k8s-singleuser-sample:3.2.1
+
+# Install packages to use for Code Interpretation
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt

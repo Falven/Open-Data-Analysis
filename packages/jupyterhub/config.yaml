@@ -9,20 +9,33 @@
 # Available chart versions: https://hub.jupyter.org/helm-chart/
 #
 hub:
+  # User our custom jupyterhub image with our custom spawner.
+  image:
+    name: <my-acr-name>.azurecr.io/k8s-hub
+    tag: 3.2.1
+    pullPolicy: Always
+  extraConfig:
+    # Custom spawner to dynamically set storage paths based on userId and conversationId.
+    customSpawner: |
+      from dynamic_storage_kube_spawner import DynamicStorageKubeSpawner
+      c.JupyterHub.spawner_class = DynamicStorageKubeSpawner
   services:
+    # Configure the Admin API service.
     myapi:
-      name: myapi
-      api_token: mytoken
+      name: 'myapi'
+      api_token: <token> # Change to your generated token (`openssl rand -hex 32`).
+    # Configure a service to cull idle single-user servers after 1 hour of inactivity.
     jupyterhub-idle-culler-service:
       name: jupyterhub-idle-culler-service
       command:
         - 'python3'
         - '-m'
         - 'jupyterhub_idle_culler'
-        - '--timeout=3600' # Cull after 1 hour of inactivity
+        - '--timeout=3600' # Time out inactive servers after 1 hour.
         - '--cull-users'
         - '--api-page-size=200'
   loadRoles:
+    # Role for the idle-culler.
     jupyterhub-idle-culler-role:
       description: 'Cull idle single-user servers'
       scopes:
@@ -32,6 +45,7 @@ hub:
         - 'delete:servers'
         - 'admin:users'
       services: ['jupyterhub-idle-culler-service']
+    # Role for the Admin. API.
     user-admin-role:
       description: 'Role to manage users and their servers'
       scopes:
@@ -40,9 +54,10 @@ hub:
         - 'admin:servers' # Read, start, stop, create and delete user servers and their state.
         - 'access:servers' # Access user servers via API or browser.
       services: ['myapi']
+# Secret to pull images from the Azure Container Registry.
 imagePullSecrets:
-  - name: cr-myacr
+  - name: azure-container-registry
 singleuser:
   image:
-    name: myacr.azurecr.io/interpreter
-    tag: latest
+    name: <my-acr-name>.azurecr.io/singleuser
+    tag: 3.2.1

@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+export const JupyterServerUserOptionsSchema = z.object({
+  conversationId: z.string(),
+});
+
+export type JupyterServerUserOptions = z.infer<typeof JupyterServerUserOptionsSchema>;
+
+export const isJupyterServerUserOptions = (obj: unknown): obj is JupyterServerUserOptions => {
+  const result = JupyterServerUserOptionsSchema.safeParse(obj);
+  if (!result.success) {
+    console.error('JupyterServerUserOptions validation failed:', result.error);
+  }
+  return result.success;
+};
+
 export const JupyterServerStateDetailsSchema = z.object({
   pod_name: z.string(),
   namespace: z.string(),
@@ -30,7 +44,7 @@ export const JupyterServerDetailsSchema = z.object({
     message: 'Invalid date format for "expires_at"',
   }),
   state: z.record(z.unknown()).optional(),
-  user_options: z.record(JupyterServerStateDetailsSchema),
+  user_options: JupyterServerUserOptionsSchema,
 });
 
 export type JupyterServerDetails = z.infer<typeof JupyterServerDetailsSchema>;

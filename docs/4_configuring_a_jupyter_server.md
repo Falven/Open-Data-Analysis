@@ -6,14 +6,7 @@
 
 There is extensive documentation on [Jupyter Docker Stacks](https://jupyter-docker-stacks.readthedocs.io/en/latest/index.html) providing guidance on how to select a stack including details on the tools and features included in each. I recommend reading through this documentation to understand the options available if the stack we have selected does not work for you.
 
-I selected the [jupyter/base-notebook](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/selecting.html#jupyter-base-notebook) stack for its minimal yet sufficient featureset for our use case, including:
-
-- Everything in `jupyter/docker-stacks-foundation`
-- Minimally functional Server (e.g., no LaTeX support for saving notebooks as PDFs)
-- `notebook`, `jupyterhub`, and `jupyterlab` packages
-- A `start-notebook.py` script as the default command
-- A `start-singleuser.py` script useful for launching containers in JupyterHub
-- Options for a self-signed HTTPS certificate
+I selected [singleuser-sample 3.2.1](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/main/images/singleuser-sample/Dockerfile) as my base image, for our use case, as it is the default image.
 
 ## 4.2 Creating our custom Dockerfile
 
@@ -27,14 +20,14 @@ openpyxl
 PyPDF2
 ```
 
-Using the chosen image as our base layer, we copy the requirements file and install these libraries using the base Conda environment.
+Using the chosen image as our base layer, we copy the requirements file and install these libraries.
 
 ```Dockerfile
-FROM quay.io/jupyter/base-notebook:latest
+FROM quay.io/jupyterhub/k8s-singleuser-sample:3.2.1
 
 # Install packages to use for Code Interpretation
-COPY requirements.txt /
-RUN conda install -y --file /requirements.txt
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
 ```
 
 And that's it! We now have our own custom Jupyter Server image.
@@ -44,12 +37,13 @@ And that's it! We now have our own custom Jupyter Server image.
 If you are planning to eventually deploy a JupyterHub instance, consider your target platform. This guide demonstrates deployment to Azure Kubernetes Service, which required building the container for arm64. Because of that, I am using the docker buildx command to build the container for both amd64 and arm64.
 
 ```shell
+cd packages/jupyterhub
 # Create a new builder instance
 docker buildx create --use --platform=linux/amd64 --name jupyter-server-builder
 # Verify the builder instance
 docker buildx inspect jupyter-server-builder --bootstrap
 # Build the container
-docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:latest --load -f ./Dockerfile .
+docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/singleuser:3.2.1 --load -f ./Dockerfile.singleuser .
 ```
 
 ## 4.4 Running and testing the container locally:
@@ -57,7 +51,7 @@ docker buildx build --platform=linux/amd64 --tag myacr.azurecr.io/interpreter:la
 To test locally, run:
 
 ```shell
-docker run --name interpreter -p 8888:8888 myacr.azureacr.io/interpreter
+docker run --name singleuser -p 8888:8888 myacr.azureacr.io/singleuser:3.2.1
 ```
 
 Once the server starts, you should see output similar to:
@@ -84,7 +78,6 @@ AZURE_OPENAI_API_KEY=
 AZURE_OPENAI_API_INSTANCE_NAME=
 AZURE_OPENAI_API_DEPLOYMENT_NAME=
 AZURE_OPENAI_API_VERSION=2023-09-01-preview
-
 ```
 
 This example uses `pnpm`, which can be easily enabled or installed [using corepack](https://pnpm.io/installation#using-corepack).

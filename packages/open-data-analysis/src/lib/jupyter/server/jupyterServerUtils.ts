@@ -25,8 +25,7 @@ import {
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
-import { JupyterHubUser, isJupyterHubUser } from '../hub/jupyterHubSchemas.js';
-import axios from 'axios';
+import { JupyterHubUser } from '../hub/jupyterHubSchemas.js';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const WsURL = getEnvOrThrow('JUPYTER_WS_URL');

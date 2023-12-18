@@ -4,58 +4,13 @@
 
 ## 5.1 Configuration
 
-Jupyter has [great documentation on configuring a Jupyter hub](https://z2jh.jupyter.org/en/latest/jupyterhub/customizing/user-environment.html), regardless I will outline a more summarized version of the steps I took in this document for your benefit.
+Jupyter has [great documentation on configuring a Jupyter hub](https://z2jh.jupyter.org/en/latest/jupyterhub/customizing/user-environment.html), regardless, in this document I will outline a more summarized version of the steps including some additional steps.
 
-The first step to creating our hub is to create a configuration file that defines some of our customizations for the hub. See the `config.yaml` file in the root of the project for an example.
-
-```yaml
-# This file can update the JupyterHub Helm chart's default configuration values.
-#
-# For reference see the configuration reference and default values, but make
-# sure to refer to the Helm chart version of interest to you!
-#
-# Introduction to YAML:     https://www.youtube.com/watch?v=cdLNKUoMc6c
-# Chart config reference:   https://zero-to-jupyterhub.readthedocs.io/en/stable/resources/reference.html
-# Chart default values:     https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/jupyterhub/values.yaml
-# Available chart versions: https://hub.jupyter.org/helm-chart/
-#
-imagePullSecrets:
-  - name: cr-myacr
-hub:
-  services:
-    myapi:
-      admin: true
-      name: myapi
-      api_token: mytoken
-    jupyterhub-idle-culler-service:
-      name: jupyterhub-idle-culler-service
-      # admin: true
-      command:
-        - 'python3'
-        - '-m'
-        - 'jupyterhub_idle_culler'
-        - '--timeout=3600' # Cull after 1 hour of inactivity
-        - '--cull-users'
-        - '--api-page-size=200'
-  loadRoles:
-    jupyterhub-idle-culler-role:
-      description: 'Cull idle single-user servers'
-      scopes:
-        - 'list:users'
-        - 'read:users:activity'
-        - 'read:servers'
-        - 'delete:servers'
-        - 'admin:users'
-      services: ['jupyterhub-idle-culler-service']
-singleuser:
-  image:
-    name: myacr.azurecr.io/interpreter
-    tag: latest
-```
+The first step to creating our hub is to create a configuration file that defines some of our customizations for the hub. See the `config.yaml` file in the root of the project for an annotated example.
 
 The first thing we need to configure is to define the name of a secret that we will create containing the necessary credentials to allow the hub to pull images from our Azure Container Registry. We simply need to define a name for it for now. We will create this secret using this name in the next section.
 
-Secondly, we want to configure our external service or api that will interact with our hub. We can define a name for the service, whether or not it should be an administrative service, and an api token that we will use to authenticate with the service. For now, we can hardcode the token as the value for `api_token`, however, in a production environment I would recommend not to keep secrets in your config file and instead generate the token. At a bare minimum I would recommend you do not check in the config file to source control.
+Secondly, we want to configure our external service or api that will interact with our hub. We can define a name for the service, whether or not it should be an administrative service, and an api token that we will use to authenticate with the service. For now, we can hardcode the token as the value for `api_token`.
 
 ```shell
 # Generate a random token for this example.
@@ -64,35 +19,35 @@ openssl rand -hex 32
 
 ## 5.2 Creating the infrastructure
 
-Please see [the JupyterHub documentation](https://z2jh.jupyter.org/en/latest/kubernetes/microsoft/step-zero-azure.html) for a more in-depth guide on deploying a K8s cluster to your cloud provider of choice. Again, I will outline the steps I took here as there were some extra steps around setting up the ACR correctly and remembering to add your IP to the NSG that are not outlined in the JupyterHub docs.
+Please see [the JupyterHub documentation](https://z2jh.jupyter.org/en/latest/kubernetes/microsoft/step-zero-azure.html) for a more in-depth guide on deploying a K8s cluster to your cloud provider of choice. Again, I will outline the steps I took here as there were some extra steps like setting up the ACR correctly, adding our Blob Store and remembering to add your IP to the NSG that are not outlined in the JupyterHub docs.
 
 For some of the following sets of commands, pay attention to quoting of the parameter values, this is required in some shells like `zsh`.
 
 ```shell
 # Login to Azure
-az login --tenant your-tenant-id
+az login --tenant <your-tenant-id>
 
 # Set our subscription
-az account set --subscription your-subscription-id
+az account set --subscription <your-subscription-id>
 
 # Create a resource group to house our ACR and AKS cluster
-az group create --name my-rg-name --location eastus
+az group create --name <my-rg-name> --location eastus
 
 # Create our ACR
-az acr create --resource-group my-rg-name --name myacr --sku Basic
+az acr create --resource-group <my-rg-name> --name <myacrname> --sku Basic
 
 # Login to our ACR
-az acr login --name myacr
+az acr login --name <myacrname>
 
 # Push our custom single-user image to our ACR
-docker push myacr.azurecr.io/interpreter
+docker push <myacrname>.azurecr.io/singleuser:3.2.1
 
 # Create a VNET and SUBNET for our AKS cluster
 az network vnet create \
-   --resource-group my-rg-name \
-   --name my-vnet-name \
+   --resource-group <my-rg-name> \
+   --name <my-vnet-name> \
    --address-prefixes 10.0.0.0/8 \
-   --subnet-name my-subnet-name \
+   --subnet-name <my-subnet-name> \
    --subnet-prefix 10.240.0.0/16
 
 # Store our NSG name in a variable for later use.
@@ -100,17 +55,17 @@ NSG_NAME=$(
   az resource show \
     --ids "$(
       az network vnet subnet show \
-        --resource-group my-rg-name \
-        --vnet-name my-vnet-name \
-        --name my-subnet-name \
+        --resource-group <my-rg-name> \
+        --vnet-name <my-vnet-name> \
+        --name <my-subnet-name> \
         --query "networkSecurityGroup.id" -o tsv
     )" \
     --query name -o tsv
 )
 
-# Add our IP to the Network Security group to allow us to access our JupyterHub instance.
-az network nsg rule create --resource-group my-rg-name \
-   --nsg-name my-nsg-name \
+# Add our IP to the Network Security group to allow us to access our HTTP/HTTPS JupyterHub instance.
+az network nsg rule create --resource-group <my-rg-name> \
+   --nsg-name <my-nsg-name> \
    --name "AllowMyIPHttpInbound" \
    --priority 200 \
    --source-address-prefixes "$(curl ifconfig.me)" \
@@ -118,8 +73,8 @@ az network nsg rule create --resource-group my-rg-name \
    --access Allow \
    --protocol TCP \
    --description "Allow my IP"
-az network nsg rule create --resource-group my-rg-name \
-   --nsg-name my-nsg-name \
+az network nsg rule create --resource-group <my-rg-name> \
+   --nsg-name <my-nsg-name> \
    --name "AllowMyIPHttpsInbound" \
    --priority 100 \
    --source-address-prefixes "$(curl ifconfig.me)" \
@@ -130,22 +85,46 @@ az network nsg rule create --resource-group my-rg-name \
 
 # Store our VNET ID in a variable for later use.
 VNET_ID=$(az network vnet show \
-   --resource-group my-rg-name \
-   --name my-vnet-name \
+   --resource-group <my-rg-name> \
+   --name <my-vnet-name> \
    --query id \
    --output tsv)
 
 # Store our SUBNET ID in a variable for later use.
 SUBNET_ID=$(az network vnet subnet show \
-   --resource-group my-rg-name \
-   --vnet-name my-vnet-name \
-   --name my-snet-name \
+   --resource-group <my-rg-name> \
+   --vnet-name <my-vnet-name> \
+   --name <my-snet-name> \
    --query id \
    --output tsv)
 
+# Create a storage account for our blob store
+az storage account create \
+  --name <my-storage-account-name> \
+  --resource-group <my-rg-name> \
+  --location eastus \
+  --sku Standard_LRS \
+  --kind StorageV2 \
+  --default-action Deny \
+  --hns true \
+  --enable-nfs-v3 true \
+  --vnet-name <my-vnet-name> \
+  --subnet <my-snet-name>
+
+# Add our IP to the storage account network rules
+az storage account network-rule add \
+  --resource-group <my-rg-name> \
+  --account-name <my-storage-account-name> \
+  --ip-address $(curl ifconfig.me)
+
+# Create a storage container for user data
+az storage container create \
+  --name users \
+  --account-name <my-storage-account-name>
+
 # Create an AAD (Azure AD) service principal for use with the cluster, assigning the Contributor role for use with the VNet, and store the password in a variable.
 SP_PASSWD=$(az ad sp create-for-rbac \
-   --name my-sp-name \
+   --name <my-sp-name> \
    --role Contributor \
    --scopes $VNET_ID \
    --query password \
@@ -153,12 +132,21 @@ SP_PASSWD=$(az ad sp create-for-rbac \
 
 # Store our service principal ID in a variable for later use.
 SP_ID=$(az ad app list \
-   --filter "displayname eq 'my-sp-name'" \
+   --filter "displayname eq '<my-sp-name>'" \
    --query "[0].appId" \
    --output tsv)
 
-# Give our SP permissions to pull containers from our ACR
-az role assignment create --assignee $SP_ID --scope /subscriptions/my-subscription-id/resourcegroups/my-rg-name/providers/Microsoft.ContainerRegistry/registries/myacr --role AcrPull
+# Give our SP permissions to pull containers from our ACR.
+az role assignment create \
+  --assignee $SP_ID \
+  --role "AcrPull" \
+  --scope /subscriptions/<my-subscription-id>/resourcegroups/<my-rg-name>/providers/Microsoft.ContainerRegistry/registries/<acr>
+
+#Give our SP storage blob data contributor permissions to our storage account.
+az role assignment create \
+  --assignee $SP_ID \
+  --role "Storage Blob Data Contributor" \
+  --scope /subscriptions/<my-subscription-id>/resourceGroups/<my-rg-name>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>
 
 # Generate a public and private SSH key to secure the nodes in our cluster.
 ssh-keygen -f my-ssh-key-name
@@ -166,7 +154,7 @@ ssh-keygen -f my-ssh-key-name
 # Create our AKS cluster
 az aks create \
    --name my-aks-name \
-   --resource-group my-rg-name \
+   --resource-group <my-rg-name> \
    --ssh-key-value my-ssh-key-name.pub \
    --node-count 3 \
    --node-vm-size Standard_D2s_v3 \
@@ -182,6 +170,7 @@ az aks create \
    --enable-cluster-autoscaler \
    --min-count 3 \
    --max-count 6 \
+   --enable-blob-driver \
    --output table
 
 # Install kubectl
@@ -190,7 +179,7 @@ az aks install-cli
 # Get our AKS credentials
 az aks get-credentials \
    --name my-aks-name \
-   --resource-group my-rg-name \
+   --resource-group <my-rg-name> \
    --output table
 
 # Check if our cluster is fully functional
@@ -202,6 +191,8 @@ kubectl get node
 [Install helm](https://helm.sh/docs/intro/install/)
 
 ```shell
+cd packages/jupyterhub
+
 # Acquire and install helm.
 curl https://raw.githubusercontent.com/helm/helm/HEAD/scripts/get-helm-3 | bash
 
@@ -214,20 +205,20 @@ helm repo add jupyterhub https://hub.jupyter.org/helm-chart/
 # Update the helm repo
 helm repo update
 
-# Install the JupyterHub helm chart using our configuration
+# Install the JupyterHub helm chart.
 helm upgrade --cleanup-on-fail \
-  --install jupyterhub-dev jupyterhub/jupyterhub \
-  --namespace my-aks-name \
+  --install <my-release-name> jupyterhub/jupyterhub \
+  --namespace <my-aks-name> \
   --create-namespace \
   --version=3.1.0 \
   --values config.yaml
 
 # Set our AKS context as default
-kubectl config use-context my-aks-name
+kubectl config use-context <my-aks-name>
 
 # Create our image pulling credentials
-kubectl create secret docker-registry cr-myacr \
-   --docker-server=myacr.azurecr.io \
+kubectl create secret docker-registry azure-container-registry \
+   --docker-server=<myacrname>.azurecr.io \
    --docker-username=$SP_ID \
    --docker-password=$SP_PASSWD
 
@@ -238,11 +229,11 @@ kubectl get secrets
 kubectl get pod
 
 #If you see any pods in a CrashLoopBackOff state, for example, an image puller, check the logs for the pod.
-kubectl logs hook-image-puller-8gjqm -n my-aks-name -c image-pull-singleuser
+kubectl logs <hook-image-puller-...> -n <my-aks-name> -c image-pull-singleuser
 
 # If you see an error like: exec /bin/sh: exec format error, ensure that your container architecture matches that required by the K8s cluster.
 kubectl get nodes -o=jsonpath='{.items[*].status.nodeInfo.architecture}'
-docker inspect myacr.azurecr.io/interpreter:latest | grep Architecture
+docker inspect <myacrname>.azurecr.io/singleuser:3.2.1 | grep Architecture
 
 # Find the public IP of our proxy to access our hub
 kubectl get service proxy-public
@@ -250,7 +241,41 @@ kubectl get service proxy-public
 
 If you lose your `config.yaml`, you can use `helm list -A` to see all the helm releases in your cluster and `helm get values [RELEASE_NAME] --revision [REVISION_NUMBER]` to get the configuration values for a specific release.
 
-## 5.4 Running the hub example
+## 5.4 Configuring storage:
+
+You can read more about Persistent Volumes in the [Kubernetes Docs](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). First, modify the Persistent Volume file `azure-blob-nfs-pv.yaml` to include your storage account details. Then, you can modify the storage per user in the claim, if needed. Finally, apply the PV and PVC.
+
+```shell
+# Apply our Persistent Volume
+apply -f azure-blob-nfs-pv.yaml
+
+# Apply our Persistent Volume Claim
+apply -f azure-blob-nfs-pvc.yaml
+```
+
+Next, we will need to configure and deploy our custom hub image, which contains a custom spawner that mounts the correct path of the storage volume to the user's pod. It retrieves the conversationId from spawn requests to construct this path and mounts the correct path.
+
+For this, we just need to build and push our custom image to our ACR.
+
+```shell
+# Login to our ACR
+az acr login --name <myacrname>
+
+# Build and push our custom image
+docker buildx build --platform=linux/amd64 --tag <myacrname>.azurecr.io/k8s-hub:3.2.1 --push -f ./Dockerfile.k8s-hub .
+
+# Restart the hub to pull the latest image.
+kubectl delete pod hub-...
+```
+
+At this point, you can manually start a single user server (using the test script in `scripts/`) to test your configuration, or continue to the next section to run the hub example.
+
+```shell
+# Create a user and start their singleuser server for testing.
+./scripts/create_user_start_server.sh <URL> <TOKEN> <USERNAME> <CONVERSATION_ID>
+```
+
+## 5.5 Running the hub example
 
 Similar to running the Jupyter Server example, running the JupyterHub example requires setting the appropriate environment variables. Create a `.env` file in the 'examples' package with the relevant values. See the `example.env` file for an example.
 
@@ -271,7 +296,7 @@ At this point, again, I recommend you refer to the annotated code in `src/hub_to
 [Previous: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md) | [Next: Conclusion](./6_conclusion.md)  
 [Table of Contents](../README.md#table-of-contents)
 
-## 5.5 Managing user servers
+## 5.6 Managing user servers
 
 > [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idle-culler) provides a JupyterHub service to identify and stop idle or long-running Jupyter servers via JupyterHub. It works solely by interacting with JupyterHub's REST API, and is often configured to run as a JupyterHub managed service started up by JupyterHub itself.
 

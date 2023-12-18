@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { writeFileSync } from 'node:fs';
-import { createInterface } from 'node:readline';
+import * as readline from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
 import { zodToJsonSchema } from 'zod-to-json-schema';
@@ -83,7 +83,7 @@ const memory: ChatCompletionMessageParam[] = [
  * Define a chat loop to interact with the agent.
  */
 const chatLoop = async (): Promise<void> => {
-  const rl = createInterface({
+  const instance = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     prompt: 'You: ',
@@ -91,11 +91,11 @@ const chatLoop = async (): Promise<void> => {
 
   const exit = (): void => {
     console.log('\nExiting...');
-    rl.close();
+    instance.close();
     process.exit(0);
   };
 
-  rl.on('SIGINT', exit);
+  instance.on('SIGINT', exit);
 
   const interpreter = new CodeInterpreter({
     userId,
@@ -105,7 +105,7 @@ const chatLoop = async (): Promise<void> => {
     onDisplayData,
   });
 
-  rl.on('line', async (input: string): Promise<void> => {
+  instance.on('line', async (input: string): Promise<void> => {
     if (input.trim() === '.exit') {
       exit();
     } else {
@@ -119,7 +119,7 @@ const chatLoop = async (): Promise<void> => {
             type: 'function',
             function: {
               function: _call.bind(interpreter),
-              parse: (input: string): any => schema.parse(JSON.parse(input)),
+              parse: (input: string): CodeInterpreterFunction => schema.parse(JSON.parse(input)),
               name,
               parameters: zodToJsonSchema(schema) as JSONSchema,
               description,
@@ -135,23 +135,30 @@ const chatLoop = async (): Promise<void> => {
         });
 
         let output = '';
-        process.stdout.write('Assistant: ');
-        for await (const part of stream) {
-          const token = part.choices[0]?.delta?.content ?? '';
+
+        for await (const chunk of stream) {
+          const token = chunk.choices[0]?.delta?.content ?? '';
+
+          if (token === '') {
+            continue;
+          }
+
           output += token;
-          process.stdout.write(token);
         }
+
+        output = interpreter.processOutput(output);
+        process.stdout.write('Assistant: ' + output);
         process.stdout.write('\n');
 
         memory.push({ role: 'assistant', content: output });
       } catch (error) {
         console.error(error);
       }
-      rl.prompt();
+      instance.prompt();
     }
   });
 
-  rl.prompt();
+  instance.prompt();
 };
 
 chatLoop().catch(console.error);

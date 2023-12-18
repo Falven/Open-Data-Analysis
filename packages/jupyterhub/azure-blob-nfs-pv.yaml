@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: azure-blob-nfs-pv
+spec:
+  capacity:
+    storage: 1TiB # How much storage to provision for the volume.
+  accessModes:
+    - ReadWriteMany # Allow our many singleuser nodes to read and write to the volume.
+  persistentVolumeReclaimPolicy: Retain # Keep the volume after the PVC is deleted.
+  storageClassName: azure-blob-nfs-premium
+  csi:
+    driver: blob.csi.azure.com
+    readOnly: false
+    volumeHandle: <my-storage-account-name>_users # Change this to a combination of the name of the Azure Storage Account and Container.
+    volumeAttributes:
+      resourceGroup: <my-resource-group-name> # Change this to the name of the Azure Resource Group.
+      storageAccount: <my-storage-account-name> # Change this to the name of the Azure Storage Account.
+      containerName: users
+      protocol: nfs
