@@ -247,10 +247,10 @@ You can read more about Persistent Volumes in the [Kubernetes Docs](https://kube
 
 ```shell
 # Apply our Persistent Volume
-apply -f azure-blob-nfs-pv.yaml
+kubectl apply -f azure-blob-nfs-pv.yaml
 
 # Apply our Persistent Volume Claim
-apply -f azure-blob-nfs-pvc.yaml
+kubectl apply -f azure-blob-nfs-pvc.yaml
 ```
 
 Next, we will need to configure and deploy our custom hub image, which contains a custom spawner that mounts the correct path of the storage volume to the user's pod. It retrieves the conversationId from spawn requests to construct this path and mounts the correct path.
