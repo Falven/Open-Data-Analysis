@@ -17,7 +17,7 @@ import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
-import { transformSandboxPathsToJupyterUrls } from 'open-data-analysis/utils';
+import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
 const useHub = true;
 const userId = 'fran';
@@ -67,10 +67,15 @@ const memory = new BufferMemory({
   returnMessages: true,
 });
 
+const Interpreter = new CodeInterpreter({ useHub, userId, conversationId, onDisplayData });
+
+const TokenProcessor = new MarkdownLinkProcessor({
+  linkReplacer: (markdownLink: string, url: string, path: string): string =>
+    markdownLink.replace(url, Interpreter.getSASURL(path)),
+});
+
 // Define our tools, including our Code Interpreter.
-const tools: StructuredTool[] = [
-  new CodeInterpreter({ useHub, userId, conversationId, onDisplayData }),
-];
+const tools: StructuredTool[] = [Interpreter];
 
 /**
  * Enhance our model with openai tools.
@@ -121,7 +126,10 @@ const agent = RunnableSequence.from([
   modelWithTools,
   // Parse the output.
   (message: AIMessage): Promise<AgentAction[] | AgentFinish> => {
-    message.content;
+    const content = message.content;
+    if (typeof content === 'string') {
+      message.content = TokenProcessor.processToken(content);
+    }
     return new OpenAIToolsAgentOutputParser().invoke(message);
   },
 ]).withConfig({ runName: 'OpenAIToolsAgent' });
@@ -159,10 +167,10 @@ const chatLoop = async (): Promise<void> => {
       exit();
     } else {
       try {
-        const result = await executor.invoke({ input });
-        // TODO: only if tool ran.
-        const output = transformSandboxPathsToJupyterUrls(result.output, userId);
+        const output = await executor.invoke({ input });
+
         console.log(`Assistant: ${output}`);
+
         await memory.saveContext({ input }, { output });
       } catch (error) {
         console.error(error);
