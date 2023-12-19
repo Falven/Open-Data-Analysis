@@ -1,4 +1,4 @@
-# Open-Data-Analysis
+# Open Data Analysis
 
 Reverse engineering OpenAI's Advanced Data Analysis feature, formerly Code Interpreter. The steps, learnings and mistakes along the way.
 
