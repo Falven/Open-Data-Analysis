@@ -19,7 +19,7 @@ class DynamicStorageKubeSpawner(KubeSpawner):
             {
                 "mountPath": "/mnt/data",  # Mount path for the Azure Blob volume
                 "name": "azure-blob-volume",  # Must match the name in the volumes list
-                "subPath": f"users/{userId}/conversations/{conversationId}",
+                "subPath": f"{userId}/conversations/{conversationId}",
             }
         )
 

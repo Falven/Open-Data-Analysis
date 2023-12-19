@@ -28,7 +28,8 @@ import {
 import {
   getEnvOrThrow,
   replaceSandboxProtocolWithDirectory,
-  generateSASURL,
+  generateUserConvBlobSASURI,
+  replaceSandboxPaths,
 } from 'open-data-analysis/utils';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
@@ -117,6 +118,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
   private conversationId: string;
   private useHub?: boolean;
   private persistExecutions: boolean;
+  private replacementProtocol: string;
   private sasExpirationMins: number;
   private sandboxDirectory: string;
   private notebookName: string;
@@ -159,6 +161,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     this.conversationId = conversationId;
     this.useHub = useHub;
     this.persistExecutions = persistExecutions;
+    this.replacementProtocol = replacementProtocol;
     this.sasExpirationMins = sasExpirationMins;
     this.sandboxDirectory = this.useHub ? '' : this.userId;
     this.notebookName = `${this.conversationId}.ipynb`;
@@ -263,26 +266,22 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
    * @returns The SAS URL.
    */
   getSASURL(mntFilePath: string): string {
-    return generateSASURL(this.userId, this.conversationId, mntFilePath, this.sasExpirationMins);
+    return generateUserConvBlobSASURI(
+      this.userId,
+      this.conversationId,
+      mntFilePath.replace(MountPath.endsWith('/') ? MountPath : MountPath + '/', ''),
+      this.sasExpirationMins,
+    );
   }
 
   /**
-   * Process the output to replace sandbox paths with asset urls.
+   * Process the assistant's output to replace sandbox paths with asset urls.
    * @param output The output to process.
    * @returns The processed output.
    */
   processOutput(output: string): string {
-    if (output.length === 0) {
-      return output;
-    }
-
-    let processedOutput = output;
-    const matches = output.matchAll(/sandbox:((?:\/?[\w.-]+)*\/?[\w.-]+\.[\w.-]+)/g);
-    for (const match of matches) {
-      if (match[0] && match[1]) {
-        processedOutput = processedOutput.replaceAll(match[0], this.getSASURL(match[1]));
-      }
-    }
-    return processedOutput;
+    return replaceSandboxPaths(output, (mntFilePath: string): string =>
+      this.getSASURL(mntFilePath),
+    );
   }
 }

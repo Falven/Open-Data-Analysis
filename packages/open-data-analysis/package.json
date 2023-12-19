@@ -46,19 +46,16 @@
     "build:tsc": "tsc --emitDeclarationOnly"
   },
   "dependencies": {
-    "@azure/storage-file-share": "^12.17.0",
+    "@azure/storage-blob": "^12.17.0",
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
     "axios": "^1.6.2",
-    "eventsource": "^2.0.2",
     "langchain": "^0.0.203",
-    "node-fetch": "^3.3.2",
     "p-retry": "^6.1.0",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.22.1"
   },
   "devDependencies": {
-    "@types/eventsource": "^1.1.15",
     "@types/node": "^20.10.1",
     "concurrently": "^8.2.2",
     "esbuild": "^0.19.8",

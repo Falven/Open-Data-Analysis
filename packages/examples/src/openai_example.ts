@@ -15,7 +15,7 @@ import { RunnableTools } from 'openai/lib/RunnableFunction.mjs';
 
 const useHub = true;
 const userId = 'fran';
-const conversationId = randomUUID();
+const conversationId = '123';
 
 // The name of your Azure OpenAI Resource.
 // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource

@@ -1,10 +1,10 @@
 import { getEnvOrThrow } from './envUtils.js';
 
-const baseURL = getEnvOrThrow('JUPYTER_BASE_URL');
-const token = getEnvOrThrow('JUPYTER_TOKEN');
+const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const JupyterToken = getEnvOrThrow('JUPYTER_TOKEN');
 
-// Matches 'sandbox:/<path>' where <path> is a valid POSIX file path
-const sandboxProtocolRegex = /sandbox:\/((?:\/?[\w.-]+)*\/?[\w.-]+\.[\w.-]+)/g;
+// Matches 'sandbox:<path>' where <path> is a valid POSIX file path
+const SandboxProtocolRegex = /sandbox:((?:\/?[\w.-]+)*\/?[\w.-]+\.[\w.-]+)/g;
 
 /**
  * Replaces all instances of the 'sandbox:/' protocol with a specified directory path.
@@ -13,7 +13,7 @@ const sandboxProtocolRegex = /sandbox:\/((?:\/?[\w.-]+)*\/?[\w.-]+\.[\w.-]+)/g;
  * @returns {string} The modified string with all 'sandbox:/' protocols replaced by the specified directory path.
  */
 export const replaceSandboxProtocolWithDirectory = (text: string, directory: string): string =>
-  text.replace(sandboxProtocolRegex, (_match, path) => `${directory}${path}`);
+  text.replace(SandboxProtocolRegex, (_match, path) => `${directory}${path}`);
 
 /**
  * Transforms Sandbox Paths to Jupyter Download URLs.
@@ -22,8 +22,23 @@ export const replaceSandboxProtocolWithDirectory = (text: string, directory: str
  * @returns {string} The transformed string with sandbox paths replaced by Jupyter Download URLs and appended tokens.
  */
 export const transformSandboxPathsToJupyterUrls = (input: string, userId?: string): string =>
-  input.replace(sandboxProtocolRegex, (_match, path) =>
+  input.replace(SandboxProtocolRegex, (_match, path) =>
     userId != undefined
-      ? `${baseURL}/user/${userId}/files/${path}?token=${token}`
-      : `${baseURL}/files/${path}?token=${token}`,
+      ? `${BaseURL}/user/${userId}/files/${path}?token=${JupyterToken}`
+      : `${BaseURL}/files/${path}?token=${JupyterToken}`,
   );
+
+export const replaceSandboxPaths = (input: string, replacer: (input: string) => string): string => {
+  if (input.length === 0) {
+    return input;
+  }
+
+  let output = input;
+  const matches = input.matchAll(SandboxProtocolRegex);
+  for (const match of matches) {
+    if (match[0] && match[1]) {
+      output = output.replaceAll(match[0], replacer(match[1]));
+    }
+  }
+  return output;
+};

@@ -1,44 +1,62 @@
 import {
   StorageSharedKeyCredential,
-  generateFileSASQueryParameters,
-  FileSASPermissions,
-} from '@azure/storage-file-share';
+  ContainerClient,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  BlobSASSignatureValues,
+} from '@azure/storage-blob';
 import { getEnvOrThrow } from './envUtils.js';
 
-const StorageCreds = new StorageSharedKeyCredential(
+const storageCredentials = new StorageSharedKeyCredential(
   getEnvOrThrow('AZURE_STORAGE_ACCOUNT'),
   getEnvOrThrow('AZURE_STORAGE_KEY'),
 );
 
-const StorageEndpoint = `https://${getEnvOrThrow('AZURE_STORAGE_ACCOUNT')}.file.core.windows.net`;
+const storageEndpointUrl = `https://${getEnvOrThrow(
+  'AZURE_STORAGE_ACCOUNT',
+)}.blob.core.windows.net`;
 
-const ShareName = getEnvOrThrow('AZURE_STORAGE_FILESHARE');
+const storageContainerName = getEnvOrThrow('AZURE_STORAGE_CONTAINER');
 
-const MountPath = getEnvOrThrow('AZURE_STORAGE_MOUNT_PATH');
-
-export const generateSASURL = (
+/**
+ * Generates a SAS URI for a blob associated with a specific user and conversation.
+ * @param userId The ID of the user associated with the blob.
+ * @param conversationId The ID of the conversation associated with the blob.
+ * @param userConvBlobName The name of the blob, including any user-specific and conversation-specific segments.
+ * @param expirationMins Number of minutes until the SAS token expires. Defaults to 60 minutes.
+ * @param storedPolicyName Optional name of a stored access policy for the blob.
+ * @returns A SAS URI for the blob.
+ */
+export const generateUserConvBlobSASURI = (
   userId: string,
   conversationId: string,
-  mntFilePath: string,
-  expirationMins: number,
+  userConvBlobName: string,
+  expirationMins: number = 60,
+  storedPolicyName?: string,
 ): string => {
-  const shareFilePath = `/users/${userId}/conversations/${conversationId}/${mntFilePath.replace(
-    MountPath.endsWith('/') ? MountPath : MountPath + '/',
-    '',
-  )}`;
-  const expiresOn = new Date();
-  expiresOn.setMinutes(expiresOn.getMinutes() + expirationMins);
+  const containerClient = new ContainerClient(
+    `${storageEndpointUrl}/${storageContainerName}`,
+    storageCredentials,
+  );
 
-  const sasToken = generateFileSASQueryParameters(
-    {
-      version: '2022-11-02',
-      expiresOn,
-      permissions: FileSASPermissions.parse('r'),
-      shareName: ShareName,
-      filePath: shareFilePath,
-    },
-    StorageCreds,
-  ).toString();
+  const blobName = `${userId}/conversations/${conversationId}/${userConvBlobName}`;
 
-  return `${StorageEndpoint}/${ShareName}/${shareFilePath}?${sasToken}`;
+  const sasOptions: BlobSASSignatureValues = {
+    containerName: storageContainerName,
+    blobName,
+  };
+
+  if (storedPolicyName === undefined) {
+    sasOptions.startsOn = new Date();
+    sasOptions.expiresOn = new Date();
+    sasOptions.expiresOn.setMinutes(sasOptions.expiresOn.getMinutes() + expirationMins);
+    sasOptions.permissions = BlobSASPermissions.parse('r');
+  } else {
+    sasOptions.identifier = storedPolicyName;
+  }
+
+  return `${containerClient.getBlobClient(blobName).url}?${generateBlobSASQueryParameters(
+    sasOptions,
+    storageCredentials,
+  ).toString()}`;
 };

@@ -61,3 +61,10 @@ singleuser:
   image:
     name: <my-acr-name>.azurecr.io/singleuser
     tag: 3.2.1
+  initContainers:
+    - name: volume-permissions
+      image: busybox
+      command: ['sh', '-c', 'chmod -R 777 /mnt/data'] # Give all users read/write/execute access to the volume.
+      volumeMounts:
+        - mountPath: /mnt/data
+          name: azure-blob-volume
