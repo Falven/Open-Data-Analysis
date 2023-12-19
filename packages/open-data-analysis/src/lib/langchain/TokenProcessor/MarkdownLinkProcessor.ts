@@ -11,9 +11,12 @@ type LinkReplacementFunction = (markdownLink: string, url: string, path: string)
 
 /**
  * Options for the MarkdownLinkProcessor constructor.
+ * @param linkReplacer - Function that replaces a markdown link with a custom format.
+ * @param partialLinkThreshold - Optional. The maximum number of consecutive partial markdown links allowed in the buffer before it's flushed. Helps prevent memory issues with large amounts of unprocessed text. Default is 5.
  */
 type MarkdownLinkProcessorOptions = {
   linkReplacer: LinkReplacementFunction;
+  partialLinkThreshold?: number;
 };
 
 /**
@@ -24,6 +27,8 @@ export class MarkdownLinkProcessor extends TokenProcessor {
   private static readonly MarkdownLinkRegex = /\[[^\]]*\]\((sandbox:([^)]+))\)/g;
   // https://regex101.com/r/fvvmQy/1
   private static readonly PartialMarkdownLinkRegex = /\[[^\]]*\]?\(?s?a?n?d?b?o?x?:?([^)]*)\)?/;
+  // How many partial links to tolerate before flushing the buffer.
+  private static readonly DefaultPartialLinkThreshold: number = 5;
 
   // Buffer to accumulate text for processing.
   private textBuffer: string;
@@ -31,14 +36,23 @@ export class MarkdownLinkProcessor extends TokenProcessor {
   // Function to construct a replacement link.
   private linkReplacer: LinkReplacementFunction;
 
+  // How many partial links we have matched.
+  private partialLinkCount: number = 0;
+
+  private partialLinkThreshold: number;
+
   /**
    * Constructs a MarkdownLinkProcessor instance.
    * @param {MarkdownLinkProcessorOptions} options - Configuration options including the custom link constructor function.
    */
-  constructor({ linkReplacer }: MarkdownLinkProcessorOptions) {
+  constructor({
+    linkReplacer,
+    partialLinkThreshold = MarkdownLinkProcessor.DefaultPartialLinkThreshold,
+  }: MarkdownLinkProcessorOptions) {
     super();
     this.textBuffer = '';
     this.linkReplacer = linkReplacer;
+    this.partialLinkThreshold = partialLinkThreshold;
   }
 
   /**
@@ -69,12 +83,16 @@ export class MarkdownLinkProcessor extends TokenProcessor {
     }
 
     // If there's a partial match, keep it in the buffer for further processing.
-    if (MarkdownLinkProcessor.PartialMarkdownLinkRegex.test(this.textBuffer)) {
+    if (
+      MarkdownLinkProcessor.PartialMarkdownLinkRegex.test(this.textBuffer) &&
+      ++this.partialLinkCount < this.partialLinkThreshold
+    ) {
       return output;
     } else {
       // If no partial match is found, add remaining buffer to output and clear the buffer.
       output += this.textBuffer;
       this.textBuffer = '';
+      this.partialLinkCount = 0;
       return output;
     }
   };
