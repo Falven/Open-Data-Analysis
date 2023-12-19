@@ -27,6 +27,11 @@
       "import": "./dist/esm/langchain/tools/index.js",
       "require": "./dist/cjs/langchain/tools/index.cjs"
     },
+    "./langchain/TokenProcessor": {
+      "types": "./dist/types/langchain/TokenProcessor/index.d.ts",
+      "import": "./dist/esm/langchain/TokenProcessor/index.js",
+      "require": "./dist/cjs/langchain/TokenProcessor/index.cjs"
+    },
     "./utils": {
       "types": "./dist/types/utils/index.d.ts",
       "import": "./dist/esm/utils/index.js",
@@ -40,10 +45,11 @@
   ],
   "scripts": {
     "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
-    "build:cjs": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --lib --cjs",
+    "build:cjs": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --lib --cjs",
     "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\"",
-    "build:esm": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --lib",
-    "build:tsc": "tsc --emitDeclarationOnly"
+    "build:esm": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --lib",
+    "build:tsc": "tsc --emitDeclarationOnly",
+    "test": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --test"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.17.0",

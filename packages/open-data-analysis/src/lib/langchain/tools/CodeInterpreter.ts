@@ -25,12 +25,7 @@ import {
   streamServerProgress,
   startServerForUser,
 } from 'open-data-analysis/jupyter/hub';
-import {
-  getEnvOrThrow,
-  replaceSandboxProtocolWithDirectory,
-  generateUserConvBlobSASURI,
-  replaceSandboxPaths,
-} from 'open-data-analysis/utils';
+import { getEnvOrThrow, generateUserConvBlobSASURI } from 'open-data-analysis/utils';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 
@@ -65,10 +60,6 @@ export type CodeInterpreterOptions = {
    * Whether to persist executions and outputs in Jupyter Notebooks.
    */
   persistExecutions?: boolean;
-  /**
-   * The protocol the assistant uses when creating markdown links to assets.
-   */
-  replacementProtocol?: string;
   /**
    * The SAS expiration time in minutes.
    */
@@ -118,7 +109,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
   private conversationId: string;
   private useHub?: boolean;
   private persistExecutions: boolean;
-  private replacementProtocol: string;
   private sasExpirationMins: number;
   private sandboxDirectory: string;
   private notebookName: string;
@@ -144,8 +134,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     onDisplayData,
     instructions,
     persistExecutions = true,
-    replacementProtocol = 'sandbox:',
-    sasExpirationMins = 60,
+    sasExpirationMins = 1440,
   }: CodeInterpreterOptions) {
     super();
 
@@ -161,7 +150,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     this.conversationId = conversationId;
     this.useHub = useHub;
     this.persistExecutions = persistExecutions;
-    this.replacementProtocol = replacementProtocol;
     this.sasExpirationMins = sasExpirationMins;
     this.sandboxDirectory = this.useHub ? '' : this.userId;
     this.notebookName = `${this.conversationId}.ipynb`;
@@ -234,19 +222,16 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
         return result ?? 'An image has been generated and displayed to the user.';
       };
 
-      // Replace any sandbox protocols with the actual directory.
-      const processedCode = replaceSandboxProtocolWithDirectory(code, this.sandboxDirectory);
-
       // Execute the code and get the result.
       const [stdout, stderr, outputs, executionCount] = await executeCode(
         session,
-        processedCode,
+        code,
         handleDisplayData,
       );
 
       if (notebookModel !== undefined && contentsManager !== undefined) {
         // Add the code and result to the notebook.
-        addCellsToNotebook(notebookModel, processedCode, outputs, executionCount);
+        addCellsToNotebook(notebookModel, code, outputs, executionCount);
 
         // Save the notebook.
         await contentsManager.save(this.notebookPath, notebookModel);
@@ -271,17 +256,6 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
       this.conversationId,
       mntFilePath.replace(MountPath.endsWith('/') ? MountPath : MountPath + '/', ''),
       this.sasExpirationMins,
-    );
-  }
-
-  /**
-   * Process the assistant's output to replace sandbox paths with asset urls.
-   * @param output The output to process.
-   * @returns The processed output.
-   */
-  processOutput(output: string): string {
-    return replaceSandboxPaths(output, (mntFilePath: string): string =>
-      this.getSASURL(mntFilePath),
     );
   }
 }

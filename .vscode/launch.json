@@ -22,6 +22,17 @@
       "type": "node",
       "outputCapture": "std",
       "console": "integratedTerminal"
+    },
+    {
+      "name": "Run Tests",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/packages/open-data-analysis",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "open-data-analysis", "test"],
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node",
+      "outputCapture": "std",
+      "console": "integratedTerminal"
     }
   ]
 }

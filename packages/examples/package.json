@@ -10,11 +10,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "node --loader ts-node/esm ../../scripts/esbuild.config.ts",
-    "build:dev": "pnpm node --loader ts-node/esm ../../scripts/esbuild.config.ts --dev",
+    "build": "node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts",
+    "build:dev": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --dev",
     "start:langchain": "pnpm dotenv node ./dist/langchain_example.js",
     "start:openai": "pnpm dotenv node ./dist/openai_example.js",
-    "watch": "pnpm dotenv node --loader ts-node/esm ../../scripts/esbuild.config.ts --dev --watch"
+    "watch": "pnpm dotenv node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --dev --watch"
   },
   "dependencies": {
     "langchain": "^0.0.203",

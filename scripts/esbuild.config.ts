@@ -1,6 +1,7 @@
 import { ChildProcess, spawn } from 'node:child_process';
+import { Readable } from 'node:stream';
 import { BuildOptions, OnResolveArgs, Plugin, PluginBuild, build, context } from 'esbuild';
-import { glob } from 'glob';
+import { Glob, glob } from 'glob';
 
 const args = process.argv.slice(2);
 const externalArg = '--external-';
@@ -60,7 +61,7 @@ const onEndPlugin: Plugin = {
 const plugins: Plugin[] = [dynamicNodeNativeModulePlugin];
 
 const appOptions: Partial<BuildOptions> = {
-  entryPoints: ['src/langchain_example.ts', 'src/openai_example.ts'],
+  entryPoints: ['src/langchain_example.ts', 'src/openai_example.ts', 'src/tests.ts'],
   outdir: 'dist/',
   bundle: false,
   plugins,
@@ -101,7 +102,54 @@ const commonOptions: BuildOptions = {
   ...(args.includes('--dev') ? devOptions : prodOptions),
 };
 
-if (args.includes('--watch')) {
+const runTestFile = (path: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const testProcess = spawn(
+      'pnpm',
+      ['node', '--no-warnings=ExperimentalWarning', '--loader', 'ts-node/esm', path],
+      {
+        stdio: 'inherit',
+        shell: true,
+      },
+    );
+
+    testProcess.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Test failed with exit code ${code}`));
+      }
+    });
+  });
+};
+
+const runTests = async (): Promise<void> => {
+  console.error('Running tests.');
+
+  const testFilesStream = Readable.from(new Glob('src/**/*.test.ts', { nodir: true }));
+  const testPromises: Promise<void>[] = [];
+
+  for await (const path of testFilesStream) {
+    testPromises.push(runTestFile(path.toString()));
+  }
+
+  const results = await Promise.allSettled(testPromises);
+
+  const failedTests = results.filter((result) => result.status === 'rejected');
+  if (failedTests.length > 0) {
+    console.error('Some tests failed:');
+    failedTests.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Test ${index + 1} failed with error:`, result.reason);
+      }
+    });
+    process.exit(1);
+  }
+};
+
+if (args.includes('--test')) {
+  await runTests();
+} else if (args.includes('--watch')) {
   plugins.push(onEndPlugin);
   const { watch } = await context(commonOptions);
   await watch();

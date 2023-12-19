@@ -12,6 +12,7 @@ import { DisplayCallback, ServerStartupCallback } from 'open-data-analysis/jupyt
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
 import { RunnableTools } from 'openai/lib/RunnableFunction.mjs';
+import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
 const useHub = true;
 const userId = 'fran';
@@ -105,6 +106,11 @@ const chatLoop = async (): Promise<void> => {
     onDisplayData,
   });
 
+  const TokenProcessor = new MarkdownLinkProcessor({
+    linkReplacer: (markdownLink: string, url: string, path: string): string =>
+      markdownLink.replace(url, interpreter.getSASURL(path)),
+  });
+
   instance.on('line', async (input: string): Promise<void> => {
     if (input.trim() === '.exit') {
       exit();
@@ -135,6 +141,7 @@ const chatLoop = async (): Promise<void> => {
         });
 
         let output = '';
+        process.stdout.write('Assistant: ');
 
         for await (const chunk of stream) {
           const token = chunk.choices[0]?.delta?.content ?? '';
@@ -143,11 +150,12 @@ const chatLoop = async (): Promise<void> => {
             continue;
           }
 
-          output += token;
+          const processedToken = TokenProcessor.processToken(token);
+          process.stdout.write(processedToken);
+
+          output += processedToken;
         }
 
-        output = interpreter.processOutput(output);
-        process.stdout.write('Assistant: ' + output);
         process.stdout.write('\n');
 
         memory.push({ role: 'assistant', content: output });
