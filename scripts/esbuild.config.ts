@@ -61,7 +61,7 @@ const onEndPlugin: Plugin = {
 const plugins: Plugin[] = [dynamicNodeNativeModulePlugin];
 
 const appOptions: Partial<BuildOptions> = {
-  entryPoints: ['src/langchain_example.ts', 'src/openai_example.ts', 'src/tests.ts'],
+  entryPoints: ['src/langchain_example.ts', 'src/openai_example.ts'],
   outdir: 'dist/',
   bundle: false,
   plugins,
