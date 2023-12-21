@@ -17,14 +17,20 @@
     "watch": "pnpm dotenv node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --dev --watch"
   },
   "dependencies": {
+    "chalk": "^5.3.0",
+    "class-transformer": "^0.5.1",
+    "highlight.js": "^11.9.0",
     "langchain": "^0.0.203",
     "open-data-analysis": "workspace:*",
     "openai": "^4.20.1",
+    "prompts": "^2.4.2",
+    "reflect-metadata": "^0.2.1",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.22.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.1",
+    "@types/prompts": "^2.4.9",
     "dotenv-cli": "^7.3.0",
     "esbuild": "^0.19.8",
     "glob": "^10.3.10",

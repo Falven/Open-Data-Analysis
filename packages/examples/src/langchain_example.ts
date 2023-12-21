@@ -1,13 +1,15 @@
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { writeFileSync } from 'node:fs';
-import { createInterface } from 'node:readline';
-import { randomUUID } from 'node:crypto';
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
-import { AIMessage, AgentAction, AgentFinish, AgentStep, BaseMessage } from 'langchain/schema';
-import { RunnablePassthrough, RunnableSequence } from 'langchain/schema/runnable';
+import {
+  AIMessage,
+  AgentAction,
+  AgentFinish,
+  AgentStep,
+  BaseMessage,
+  SystemMessage,
+} from 'langchain/schema';
+import { RunnableBinding, RunnablePassthrough, RunnableSequence } from 'langchain/schema/runnable';
 import { StructuredTool, formatToOpenAITool } from 'langchain/tools';
 import {
   OpenAIToolsAgentOutputParser,
@@ -16,170 +18,159 @@ import {
 import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
-import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
-const useHub = true;
-const userId = 'fran';
-const conversationId = randomUUID();
-
-/**
- * TODO: Address token security.
- * TODO: File upload example.
- */
-
-/**
- * Saves an image to the images directory and returns a markdown link to the image.
- * @param imageName The name of the image.
- * @param base64ImageData The base64 encoded image data.
- */
-const onDisplayData: DisplayCallback = (base64ImageData: string): string | undefined => {
-  const imageData = Buffer.from(base64ImageData, 'base64');
-  const imageName = `${randomUUID()}.png`;
-  const imagePath = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '..',
-    '..',
-    '..',
-    'images',
-    imageName,
-  );
-  writeFileSync(imagePath, imageData);
-  // const markdownLink = `![Generated Image](/images/${imageName})`;
-  return undefined;
-};
+import { Chat } from './utils/chat.js';
+import { Conversation } from './utils/conversation.js';
+import { showAsciiProgress } from './utils/ascii.js';
+import { saveImage } from './utils/files.js';
+import { BaseCallbackConfig } from 'langchain/callbacks';
+import { Message } from './utils/message.js';
 
 /**
  * Define our chat model and it's parameters.
  * We are using the Chat endpoints so we use `ChatOpenAI`.
  */
-const model = new ChatOpenAI({ temperature: 0, verbose: false });
+const Model = new ChatOpenAI({ temperature: 0, verbose: false });
 
 /**
  * Define memory to hold future chat history.
  * variables: history, input, output.
  * `returnMessages`: returns messages in a list instead of a string - better for Chat models.
  */
-const memory = new BufferMemory({
+const Memory = new BufferMemory({
   memoryKey: 'chat_history',
   inputKey: 'input',
   outputKey: 'output',
   returnMessages: true,
 });
 
-const Interpreter = new CodeInterpreter({ useHub, userId, conversationId, onDisplayData });
+let Interpreter: CodeInterpreter;
+let Tools: StructuredTool[];
 
 const TokenProcessor = new MarkdownLinkProcessor({
   linkReplacer: (markdownLink: string, url: string, path: string): string =>
     markdownLink.replace(url, Interpreter.getSASURL(path)),
 });
 
-// Define our tools, including our Code Interpreter.
-const tools: StructuredTool[] = [Interpreter];
+let Agent: RunnableBinding<
+  Record<string, unknown>,
+  AgentAction[] | AgentFinish,
+  BaseCallbackConfig
+>;
 
-/**
- * Enhance our model with openai tools.
- * Here we're using the `formatToOpenAITool` utility
- * to format our tools into the proper schema for OpenAI.
- */
-const modelWithTools = model.bind({
-  tools: tools.map(formatToOpenAITool),
-});
+let Executor: AgentExecutor;
 
-type UserInput = {
-  input: string;
-};
+const chat = new Chat();
 
-type AgentInput = UserInput & {
-  steps: AgentStep[];
-};
+chat.onUserSettingsChange = (
+  userName: string,
+  conversation: Conversation,
+  useHub: boolean,
+): void => {
+  Memory.clear();
 
-/**
- * Define our prompt:
- * - We will begin with a system message informing the assistant of it's responsibilities.
- * - We then use a `MessagesPlaceholder` to hold any chat history up to this point.
- * - We then pass the human's message to the agent, as defined by the `input` variable.
- * - We then use another `MessagesPlaceholder` to hold the agent's scratchpad (notes).
- */
-const prompt = ChatPromptTemplate.fromMessages([
-  ['system', 'You are a helpful assistant.'],
-  new MessagesPlaceholder('chat_history'),
-  ['human', '{input}'],
-  new MessagesPlaceholder('agent_scratchpad'),
-]);
-
-/**
- * Construct our runnable agent.
- * We're using `formatToOpenAIToolMessages` to format the agent
- * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
- */
-const agent = RunnableSequence.from([
-  // Passthrough to add the agent scratchpad and chat history.
-  (RunnablePassthrough<AgentInput>).assign({
-    agent_scratchpad: ({ steps }) => formatToOpenAIToolMessages(steps as ToolsAgentStep[]),
-    chat_history: async (): Promise<BaseMessage[]> =>
-      (await memory.loadMemoryVariables({})).chat_history,
-  }),
-  // Invoke the prompt.
-  prompt,
-  // Invoke the LLM.
-  modelWithTools,
-  // Parse the output.
-  (message: AIMessage): Promise<AgentAction[] | AgentFinish> => {
-    const content = message.content;
-    if (typeof content === 'string') {
-      message.content = TokenProcessor.processToken(content);
+  for (const { role, content } of conversation.messages) {
+    switch (role) {
+      case 'system':
+        Memory.chatHistory.addMessage(new SystemMessage(content));
+        break;
+      case 'assistant':
+        Memory.chatHistory.addAIChatMessage(content);
+        break;
+      default:
+        Memory.chatHistory.addUserMessage(content);
     }
-    return new OpenAIToolsAgentOutputParser().invoke(message);
-  },
-]).withConfig({ runName: 'OpenAIToolsAgent' });
+  }
 
-/**
- * Construct our agent executor from our Runnable.
- */
-const executor = AgentExecutor.fromAgentAndTools({
-  agent,
-  tools,
-  memory,
-  returnIntermediateSteps: true,
-});
-
-/**
- * Define a chat loop to interact with the agent.
- */
-const chatLoop = async (): Promise<void> => {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: 'You: ',
+  Interpreter = new CodeInterpreter({
+    userId: userName,
+    conversationId: conversation.id,
+    useHub,
+    onServerStartup: showAsciiProgress(userName),
+    onDisplayData: saveImage,
   });
 
-  const exit = (): void => {
-    console.log('\nExiting...');
-    rl.close();
-    process.exit(0);
+  Tools = [Interpreter];
+
+  /**
+   * Enhance our model with openai tools.
+   * Here we're using the `formatToOpenAITool` utility
+   * to format our tools into the proper schema for OpenAI.
+   */
+  const modelWithTools = Model.bind({
+    tools: Tools.map(formatToOpenAITool),
+  });
+
+  type UserInput = {
+    input: string;
   };
 
-  rl.on('SIGINT', exit);
+  type AgentInput = UserInput & {
+    steps: AgentStep[];
+  };
 
-  rl.on('line', async (input: string): Promise<void> => {
-    if (input.trim() === '.exit') {
-      exit();
-    } else {
-      try {
-        const output = await executor.invoke({ input });
+  /**
+   * Define our prompt:
+   * - We will begin with a system message informing the assistant of it's responsibilities.
+   * - We then use a `MessagesPlaceholder` to hold any chat history up to this point.
+   * - We then pass the human's message to the agent, as defined by the `input` variable.
+   * - We then use another `MessagesPlaceholder` to hold the agent's scratchpad (notes).
+   */
+  const prompt = ChatPromptTemplate.fromMessages([
+    ['system', 'You are a helpful assistant.'],
+    new MessagesPlaceholder('chat_history'),
+    ['human', '{input}'],
+    new MessagesPlaceholder('agent_scratchpad'),
+  ]);
 
-        console.log(`Assistant: ${output}`);
-
-        await memory.saveContext({ input }, { output });
-      } catch (error) {
-        console.error(error);
+  /**
+   * Construct our runnable agent.
+   * We're using `formatToOpenAIToolMessages` to format the agent
+   * steps into a list of `BaseMessages` which can be passed into `MessagesPlaceholder`
+   */
+  Agent = RunnableSequence.from([
+    // Passthrough to add the agent scratchpad and chat history.
+    (RunnablePassthrough<AgentInput>).assign({
+      agent_scratchpad: ({ steps }) => formatToOpenAIToolMessages(steps as ToolsAgentStep[]),
+      chat_history: async (): Promise<BaseMessage[]> =>
+        (await Memory.loadMemoryVariables({})).chat_history,
+    }),
+    // Invoke the prompt.
+    prompt,
+    // Invoke the LLM.
+    modelWithTools,
+    // Parse the output.
+    (message: AIMessage): Promise<AgentAction[] | AgentFinish> => {
+      const content = message.content;
+      if (typeof content === 'string') {
+        message.content = TokenProcessor.processToken(content);
       }
-      rl.prompt();
-    }
-  });
+      return new OpenAIToolsAgentOutputParser().invoke(message);
+    },
+  ]).withConfig({ runName: 'OpenAIToolsAgent' });
 
-  rl.prompt();
+  /**
+   * Construct our agent executor from our Runnable.
+   */
+  Executor = AgentExecutor.fromAgentAndTools({
+    agent: Agent,
+    tools: Tools,
+    memory: Memory,
+    returnIntermediateSteps: true,
+  });
 };
 
-chatLoop().catch(console.error);
+chat.generateAssistantResponse = async (message: Message): Promise<string> => {
+  const input = message.content;
+  const result = await Executor.invoke({ input });
+  const output = TokenProcessor.processToken(result.output);
+  await Memory.saveContext({ input }, { output });
+  return output;
+};
+
+chat.onExit = async (): Promise<void> => await chat.save();
+
+await chat.load();
+
+await chat.loop();

@@ -14,6 +14,7 @@ import {
   TokenDetails,
   CreateTokenRequest,
 } from 'open-data-analysis/jupyter/hub';
+
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
@@ -185,7 +186,6 @@ export const streamServerProgress = async (
               console.log(`No message received for ${timeout / 1000} seconds, aborting request.`);
               clearTimeout(timeoutId);
               controller.abort();
-              responseStream.destroy();
             }
           }, timeout);
         },
@@ -194,6 +194,12 @@ export const streamServerProgress = async (
   );
 
   const responseStream = response.data as Readable;
+
+  const flush = (transform: Transform): void => {
+    clearTimeout(timeoutId);
+    transform.push(null);
+    responseStream.destroy();
+  };
 
   let buffer: string = '';
   const progressEventTransform = new Transform({
@@ -220,18 +226,14 @@ export const streamServerProgress = async (
           }
 
           if (progressEvent?.ready === true) {
-            this.push(null);
-            responseStream.destroy();
-            clearTimeout(timeoutId);
+            flush(this);
             break;
           }
         } catch (error: unknown) {
           if (error instanceof ZodError) {
             this.emit('error', error);
           } else {
-            this.push(null);
-            responseStream.destroy();
-            clearTimeout(timeoutId);
+            flush(this);
             throw error;
           }
         }

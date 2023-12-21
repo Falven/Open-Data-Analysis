@@ -120,6 +120,10 @@ Leveraging [`@jupterlab/services`](https://github.com/jupyterlab/jupyterlab) or 
 
 Additionally, as you may recall from the system prompt, OpenAI's Advanced Data Analysis feature also uses a `Tool` for interacting with its stateful Jupyter notebook environment.
 
+This makes sense as
+
+> [Having proper tool abstractions is at the core of building Agents of all kinds.](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/tools/root.html#concept)
+
 At this point I would suggest that you explore the source code in `src/tool_example.ts`, `src/tools/CodeInterpreter.ts` and `src/utils/jupyterServerUtils.ts` to familiarize yourself with some of the concepts. I have annotated the code with comments for clarity.
 
 [Previous: Key Investigation](./3_key_investigation.md) | [Next: Configuring a Jupyter Hub](./5_configuring_a_jupyter_hub.md)  

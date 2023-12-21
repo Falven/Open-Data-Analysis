@@ -61,7 +61,7 @@ const onEndPlugin: Plugin = {
 const plugins: Plugin[] = [dynamicNodeNativeModulePlugin];
 
 const appOptions: Partial<BuildOptions> = {
-  entryPoints: ['src/langchain_example.ts', 'src/openai_example.ts'],
+  entryPoints: await glob('src/**/*.ts'),
   outdir: 'dist/',
   bundle: false,
   plugins,

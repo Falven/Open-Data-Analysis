@@ -13,7 +13,7 @@
   ],
   "configurations": [
     {
-      "name": "Run Example",
+      "name": "Run Examples",
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/examples",
       "runtimeExecutable": "pnpm",

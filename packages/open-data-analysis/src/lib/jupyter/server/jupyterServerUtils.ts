@@ -294,24 +294,6 @@ export const addCellsToNotebook = (
   });
 };
 
-// Matches any character that is NOT a lowercase letter (a-z), uppercase letter (A-Z), digit (0-9), underscore (_), or hyphen (-).
-const invalidUserIdCharactersRegex = /[^a-zA-Z0-9_-]/g;
-
-/**
- * Sanitizes a username by replacing invalid characters.
- *
- * This function ensures that a username contains only alphanumeric characters,
- * underscores, and hyphens. It replaces any characters outside of this set with
- * underscores. The regular expression used identifies any character that is
- * not a lowercase letter (a-z), uppercase letter (A-Z), digit (0-9), underscore (_),
- * or hyphen (-), and these characters are then replaced with an underscore.
- *
- * @param {string} username - The username to be sanitized.
- * @returns {string} - The sanitized username.
- */
-export const sanitizeUserId = (username: string): string =>
-  username.replace(invalidUserIdCharactersRegex, '_');
-
 /**
  * Test whether an output is from display data.
  */

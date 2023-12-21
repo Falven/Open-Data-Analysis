@@ -16,7 +16,6 @@ import {
   getOrCreateNotebook,
   createServerSettings,
   createServerSettingsForUser,
-  sanitizeUserId,
   ServerStartupCallback,
   DisplayCallback,
 } from 'open-data-analysis/jupyter/server';
@@ -25,7 +24,11 @@ import {
   streamServerProgress,
   startServerForUser,
 } from 'open-data-analysis/jupyter/hub';
-import { getEnvOrThrow, generateUserConvBlobSASURI } from 'open-data-analysis/utils';
+import {
+  getEnvOrThrow,
+  generateUserConvBlobSASURI,
+  sanitizeUsername,
+} from 'open-data-analysis/utils';
 
 const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 
@@ -146,7 +149,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     this.onServerStartup = onServerStartup;
     this.onDisplayData = onDisplayData;
 
-    this.userId = sanitizeUserId(userId);
+    this.userId = sanitizeUsername(userId);
     this.conversationId = conversationId;
     this.useHub = useHub;
     this.persistExecutions = persistExecutions;

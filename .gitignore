@@ -4,3 +4,4 @@ test_files/
 .env
 .DS_Store
 images/*
+**/chat.json
