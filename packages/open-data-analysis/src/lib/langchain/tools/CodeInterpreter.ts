@@ -30,9 +30,7 @@ import {
   sanitizeUsername,
 } from 'open-data-analysis/utils';
 
-const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
-
-const MountPath = getEnvOrThrow('AZURE_STORAGE_MOUNT_PATH');
+const mountPath = getEnvOrThrow('AZURE_STORAGE_MOUNT_PATH');
 
 export type CodeInterpreterOptions = {
   /**
@@ -90,7 +88,7 @@ export type CodeInterpreterFunction = z.infer<CodeInterpreterFunctionSchemaType>
  * A template to create our code interpreter tool prompt.
  */
 export const codeInterpreterPromptTemplate = (additionalInstructions?: string): string => {
-  let prompt = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${MountPath}' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.`;
+  let prompt = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${mountPath}' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.`;
   if (additionalInstructions !== undefined) {
     prompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
   }
@@ -257,7 +255,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     return generateUserConvBlobSASURI(
       this.userId,
       this.conversationId,
-      mntFilePath.replace(MountPath.endsWith('/') ? MountPath : MountPath + '/', ''),
+      mntFilePath.replace(mountPath.endsWith('/') ? mountPath : mountPath + '/', ''),
       this.sasExpirationMins,
     );
   }

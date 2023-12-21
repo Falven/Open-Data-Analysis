@@ -1,15 +1,75 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { isPromise } from 'node:util/types';
 import { createInterface } from 'node:readline';
+import { randomUUID } from 'node:crypto';
 import prompts from 'prompts';
 import 'reflect-metadata';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import chalk from 'chalk';
 
-import { Conversation } from './conversation.js';
-import { Message } from './message.js';
+export type ToolInvocation = {
+  name: string;
+  input: string;
+  output: string;
+};
+
+export type Message = {
+  id: string;
+  role: string;
+  content: string;
+  toolInvocations?: ToolInvocation[];
+};
+
+export class Conversation {
+  id: string;
+  messages: Message[];
+
+  get title(): string {
+    if (this.messages.length > 1) {
+      return this.messages[1].content.length > 9
+        ? this.messages[1].content.substring(0, 10) + '...'
+        : this.messages[1].content;
+    } else {
+      return this.id;
+    }
+  }
+
+  constructor() {
+    this.id = randomUUID();
+    this.messages = [];
+  }
+}
+
+export const isAsyncIterable = (object: unknown): object is AsyncIterable<unknown> =>
+  object != null && typeof object === 'object' && Symbol.asyncIterator in object;
 
 export type ChatMap = { [username: string]: Conversation[] };
+
+export type GenerateAssistantResponse = (
+  username: string,
+  conversation: Conversation,
+  message: Message,
+) => AsyncGenerator<Message, void, void> | Promise<Message> | Message;
+
+export type OnUserSettingsChangeCb = (
+  username: string,
+  conversation: Conversation,
+  useHub: boolean,
+) => void | Promise<void>;
+
+export type OnUserMessageCb = (
+  username: string,
+  conversation: Conversation,
+  message: Message,
+) => void | Promise<void>;
+
+export type OnAssistantMessageCb = (
+  username: string,
+  conversation: Conversation,
+  message: Message,
+) => void | Promise<void>;
+
+export type OnExitCb = () => void | Promise<void>;
 
 export enum Command {
   Exit = '.exit',
@@ -21,23 +81,7 @@ export enum Command {
 export const isCommand = (value: string): value is Command =>
   Object.values(Command).includes(value as Command);
 
-export type GenerateAssistantResponse = (
-  message: Message,
-) => AsyncGenerator<string> | Promise<string> | string;
-
-export type OnUserSettingsChangeCb = (
-  username: string,
-  conversation: Conversation,
-  useHub: boolean,
-) => void | Promise<void>;
-
-export type OnUserMessageCb = (message: Message) => void | Promise<void>;
-
-export type OnAssistantMessageCb = (message: Message) => void | Promise<void>;
-
-export type OnExitCb = () => void | Promise<void>;
-
-export class Chat {
+export class ConsoleChat {
   private static ChatFile = 'chat.json';
 
   private chatMap: ChatMap;
@@ -52,7 +96,11 @@ export class Chat {
 
   constructor() {
     this.chatMap = {};
-    this._generateAssistantResponse = () => 'You must implement generateAssistantResponse()';
+    this._generateAssistantResponse = (): Message => ({
+      id: '-1',
+      role: 'system',
+      content: chalk.redBright('You must implement generateAssistantResponse()!'),
+    });
   }
 
   set generateAssistantResponse(callback: GenerateAssistantResponse) {
@@ -163,7 +211,60 @@ export class Chat {
     }
   }
 
+  logToolInvocations(toolInvocations: ToolInvocation[] | undefined) {
+    if (toolInvocations === undefined) {
+      return;
+    }
+
+    for (const toolInvocation of toolInvocations) {
+      const { name, input, output } = toolInvocation;
+      const trailLength = Math.max(name.length, input.length, output.length);
+      const trail = chalk.yellow('-').repeat(trailLength);
+
+      console.log(trail);
+      console.log(chalk.bold.yellow(name));
+      console.log(trail);
+      console.log(chalk.bold('Input:'));
+      console.log(input);
+      console.log(trail);
+      console.log(chalk.bold('Output:'));
+      console.log(output);
+      console.log(trail);
+    }
+  }
+
+  private async logStreamingResponse(
+    response: AsyncIterable<Message>,
+  ): Promise<Message | undefined> {
+    let message: Message | undefined = undefined;
+    let toolsLogged = false;
+
+    for await (const chunk of response) {
+      message = chunk;
+
+      if (message.toolInvocations !== undefined && toolsLogged === false) {
+        this.logToolInvocations(message.toolInvocations);
+        toolsLogged = true;
+      }
+
+      process.stdout.write(message.content);
+    }
+
+    return message;
+  }
+
+  private async logResponse(response: Promise<Message> | Message): Promise<Message> {
+    const message = isPromise(response) ? await response : response;
+    this.logToolInvocations(message.toolInvocations);
+    process.stdout.write(message.content);
+    return message;
+  }
+
   private async logAssistantResponse(): Promise<void> {
+    if (this.currentUser === undefined) {
+      throw new Error("Unexpected 'undefined' encountered for 'currentUser'");
+    }
+
     if (this.currentConversation === undefined) {
       throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
     }
@@ -173,34 +274,38 @@ export class Chat {
       return;
     }
 
-    const assistantResponse = this._generateAssistantResponse(lastMessage);
+    const assistantResponse = this._generateAssistantResponse(
+      this.currentUser,
+      this.currentConversation,
+      lastMessage,
+    );
 
-    let messageContent = '';
-    process.stdout.write('Assistant: ');
-    if (typeof assistantResponse === 'object' && Symbol.asyncIterator in assistantResponse) {
-      for await (const token of assistantResponse) {
-        messageContent += token;
-        process.stdout.write(token);
-      }
-    } else if (isPromise(assistantResponse)) {
-      messageContent = (await assistantResponse) as string;
-      process.stdout.write(messageContent);
-    } else if (typeof assistantResponse === 'string') {
-      messageContent = assistantResponse;
-      process.stdout.write(messageContent);
+    let message: Message | undefined = undefined;
+    process.stdout.write(chalk.bold('Assistant: '));
+
+    if (isAsyncIterable(assistantResponse)) {
+      message = await this.logStreamingResponse(assistantResponse);
     } else {
-      throw new Error('Unexpected response from assistant');
+      message = await this.logResponse(assistantResponse);
     }
+
     process.stdout.write('\n');
+
+    if (message === undefined) {
+      throw new Error("Unexpected assistant response 'undefined'");
+    }
 
     if (this.currentConversation === undefined) {
       throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
     }
 
-    const assistantMessage = new Message('assistant', messageContent);
-    this.currentConversation.messages.push(assistantMessage);
+    this.currentConversation.messages.push(message);
 
-    const assistantMessageCb = this?._onAssistantMessage?.(assistantMessage);
+    const assistantMessageCb = this?._onAssistantMessage?.(
+      this.currentUser,
+      this.currentConversation,
+      message,
+    );
     if (isPromise(assistantMessageCb)) {
       await assistantMessageCb;
     }
@@ -210,8 +315,11 @@ export class Chat {
     console.log(chalk.blue.bold('Commands:'));
     console.log(chalk.blue.bold('  .user: ') + chalk.blue('Switch users'));
     console.log(chalk.blue.bold('  .conversation: ') + chalk.blue('Switch conversations'));
-    console.log(chalk.blue.bold('  .hub: ') + chalk.blue('Connect to a JupyterHub instance'));
-    console.log(chalk.blue.bold('  .exit: ') + chalk.blue('Exit'));
+    console.log(
+      chalk.blue.bold('  .hub: ') +
+        chalk.blue('Whether to connect to a JupyterHub or Jupyter Server instance'),
+    );
+    console.log(chalk.blue.bold('  .exit: ') + chalk.blue('Save and exit'));
   }
 
   private async promptForMessage(): Promise<Command> {
@@ -236,7 +344,7 @@ export class Chat {
         output: process.stdout,
         terminal: true,
         history,
-        prompt: 'You: ',
+        prompt: chalk.bold('You: '),
       });
 
       rl.on('SIGINT', (): void => resolve(Command.Exit));
@@ -247,17 +355,28 @@ export class Chat {
           rl.close();
           resolve(trimmedInput);
         } else {
+          if (this.currentUser === undefined) {
+            throw new Error("Unexpected 'undefined' encountered for 'currentUser'");
+          }
           if (this.currentConversation === undefined) {
             throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
           }
 
-          const userMessage = new Message('user', input);
+          const userMessage = { id: randomUUID(), role: 'user', content: input };
+
           this.currentConversation.messages.push(userMessage);
-          const userMessageCb = this?._onUserMessage?.(userMessage);
+
+          const userMessageCb = this?._onUserMessage?.(
+            this.currentUser,
+            this.currentConversation,
+            userMessage,
+          );
           if (isPromise(userMessageCb)) {
             await userMessageCb;
           }
+
           await this.logAssistantResponse();
+
           rl.prompt();
         }
       });
@@ -311,7 +430,7 @@ export class Chat {
     }
   }
 
-  async load(chatFile: string = Chat.ChatFile): Promise<void> {
+  async load(chatFile: string = ConsoleChat.ChatFile): Promise<void> {
     try {
       const data = await readFile(chatFile, 'utf-8');
       this.chatMap = JSON.parse(data);
@@ -324,7 +443,7 @@ export class Chat {
     }
   }
 
-  async save(chatFile: string = Chat.ChatFile): Promise<void> {
+  async save(chatFile: string = ConsoleChat.ChatFile): Promise<void> {
     const data = JSON.stringify(instanceToPlain(this.chatMap), null, 2);
     await writeFile(chatFile, data, { encoding: 'utf-8' });
   }

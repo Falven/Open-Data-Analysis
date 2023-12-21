@@ -17,34 +17,34 @@ import {
 
 import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
 
-const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
-const Token = getEnvOrThrow('JUPYTER_TOKEN');
+const jupyterBaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const jupyterToken = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
  * Create an axios instance for the JupyterHub API.
  */
 const instance = axios.create({
-  baseURL: `${BaseURL}/hub/api`,
+  baseURL: `${jupyterBaseURL}/hub/api`,
   headers: {
-    'Authorization': `token ${Token}`,
+    'Authorization': `token ${jupyterToken}`,
     'Content-Type': 'application/json',
   },
 });
 
-export const ProgressStartedEvent: ProgressEvent = {
+export const progressStartedEvent: ProgressEvent = {
   progress: 0,
   message: 'Server starting...',
   ready: false,
 };
 
-export const ProgressFailedEvent: ProgressEvent = {
+export const progressFailedEvent: ProgressEvent = {
   progress: 0,
   message: 'Server failed to start.',
   ready: false,
   failed: true,
 };
 
-export const ProgressFinishedEvent: ProgressEvent = {
+export const progressFinishedEvent: ProgressEvent = {
   progress: 100,
   message: 'Server started.',
   ready: true,
@@ -64,7 +64,7 @@ export const startServerForUser = async (
   try {
     const firstServer = Object.values(user.servers)[0];
     if (firstServer !== undefined && firstServer.ready) {
-      return ProgressFinishedEvent;
+      return progressFinishedEvent;
     }
 
     const response = await createRetryableAxiosRequest(
@@ -76,15 +76,15 @@ export const startServerForUser = async (
 
     switch (response.status) {
       case 201:
-        return ProgressFinishedEvent;
+        return progressFinishedEvent;
       case 202:
-        return ProgressStartedEvent;
+        return progressStartedEvent;
       default:
         throw new Error(`Unexpected response status ${response.status}`);
     }
   } catch (error: unknown) {
     if (axios.isAxiosError(error) && error.response?.status === 400) {
-      return ProgressFailedEvent;
+      return progressFailedEvent;
     }
     throw error;
   }

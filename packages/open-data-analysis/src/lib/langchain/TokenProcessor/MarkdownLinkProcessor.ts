@@ -7,14 +7,14 @@ import { TokenProcessor } from './TokenProcessor.js';
  * @param path - A specific part of the URL, extracted by the regex pattern.
  * @returns The new string to replace the original markdown link.
  */
-type LinkReplacementFunction = (markdownLink: string, url: string, path: string) => string;
+export type LinkReplacementFunction = (markdownLink: string, url: string, path: string) => string;
 
 /**
  * Options for the MarkdownLinkProcessor constructor.
  * @param linkReplacer - Function that replaces a markdown link with a custom format.
  * @param partialLinkThreshold - Optional. The maximum number of consecutive partial markdown links allowed in the buffer before it's flushed. Helps prevent memory issues with large amounts of unprocessed text. Default is 5.
  */
-type MarkdownLinkProcessorOptions = {
+export type MarkdownLinkProcessorOptions = {
   linkReplacer: LinkReplacementFunction;
   partialLinkThreshold?: number;
 };

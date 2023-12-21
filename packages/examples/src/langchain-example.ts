@@ -20,12 +20,10 @@ import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/o
 import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
-import { Chat } from './utils/chat.js';
-import { Conversation } from './utils/conversation.js';
+import { ConsoleChat, Conversation, Message } from './utils/console-chat.js';
 import { showAsciiProgress } from './utils/ascii.js';
 import { saveImage } from './utils/files.js';
 import { BaseCallbackConfig } from 'langchain/callbacks';
-import { Message } from './utils/message.js';
 
 /**
  * Define our chat model and it's parameters.
@@ -61,7 +59,7 @@ let Agent: RunnableBinding<
 
 let Executor: AgentExecutor;
 
-const chat = new Chat();
+const chat = new ConsoleChat();
 
 chat.onUserSettingsChange = (
   userName: string,
@@ -161,12 +159,28 @@ chat.onUserSettingsChange = (
   });
 };
 
-chat.generateAssistantResponse = async (message: Message): Promise<string> => {
+chat.generateAssistantResponse = async (
+  username: string,
+  conversation: Conversation,
+  message: Message,
+): Promise<Message> => {
   const input = message.content;
-  const result = await Executor.invoke({ input });
-  const output = TokenProcessor.processToken(result.output);
+  const runOutput = await Executor.invoke({ input });
+
+  const output = TokenProcessor.processToken(runOutput.output);
+
   await Memory.saveContext({ input }, { output });
-  return output;
+
+  return {
+    id: message.id,
+    role: 'assistant',
+    content: output,
+    toolInvocations: runOutput.intermediateSteps?.map((step: any) => ({
+      name: step.action.tool,
+      input: JSON.stringify(step.action.toolInput),
+      output: step.observation,
+    })),
+  };
 };
 
 chat.onExit = async (): Promise<void> => await chat.save();

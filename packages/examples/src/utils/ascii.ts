@@ -1,3 +1,5 @@
+import chalk from 'chalk';
+
 import { ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
 
@@ -10,10 +12,10 @@ export const showAsciiProgress = (userName: string): ServerStartupCallback => {
 
     const filledBar = '='.repeat(filledBarLength);
     const emptyBar = '-'.repeat(emptyBarLength);
-    const displayBar = `[${filledBar}${emptyBar}]`;
+    const displayBar = `[${filledBar}${chalk.gray(emptyBar)}]`;
 
     process.stdout.write(
-      `\r${userName}'s server is starting ${displayBar} ${progress}%${
+      `\r${userName}'s server is starting ${chalk.green(displayBar)} ${progress}%${
         progressEvent.ready ? '\n' : ''
       }`,
     );

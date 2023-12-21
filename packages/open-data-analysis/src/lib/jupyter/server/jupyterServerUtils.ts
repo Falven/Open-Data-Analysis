@@ -27,16 +27,20 @@ import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JupyterHubUser } from '../hub/jupyterHubSchemas.js';
 
-const BaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
-const WsURL = getEnvOrThrow('JUPYTER_WS_URL');
-const Token = getEnvOrThrow('JUPYTER_TOKEN');
+const jupyterBaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
+const jupyterWsURL = getEnvOrThrow('JUPYTER_WS_URL');
+const jupyterToken = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
  * Create settings for a general, single-user Jupyter server.
  * @returns {ServerConnection.ISettings} The server settings.
  */
 export const createServerSettings = (): ServerConnection.ISettings =>
-  ServerConnection.makeSettings({ baseUrl: BaseURL, wsUrl: WsURL, token: Token });
+  ServerConnection.makeSettings({
+    baseUrl: jupyterBaseURL,
+    wsUrl: jupyterWsURL,
+    token: jupyterToken,
+  });
 
 /**
  * Create settings for a Jupyter server for a specific user.
@@ -45,13 +49,13 @@ export const createServerSettings = (): ServerConnection.ISettings =>
  */
 export const createServerSettingsForUser = (
   user: JupyterHubUser,
-  token: string = Token,
+  token: string = jupyterToken,
 ): ServerConnection.ISettings => {
   const { name } = user;
 
   return ServerConnection.makeSettings({
-    baseUrl: `${BaseURL}/user/${name}`,
-    wsUrl: `${WsURL}/user/${name}`,
+    baseUrl: `${jupyterBaseURL}/user/${name}`,
+    wsUrl: `${jupyterWsURL}/user/${name}`,
     token,
   });
 };

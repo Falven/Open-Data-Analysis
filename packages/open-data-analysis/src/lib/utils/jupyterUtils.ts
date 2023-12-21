@@ -1,5 +1,5 @@
 // Matches any character that is NOT a lowercase letter (a-z), uppercase letter (A-Z), digit (0-9), underscore (_), or hyphen (-).
-const InvalidUsernameCharactersRegex = /[^A-Za-z0-9]+|^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g;
+const invalidUsernameCharactersRegex = /[^A-Za-z0-9]+|^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g;
 
 /**
  * Sanitizes a username by replacing invalid characters.
@@ -14,4 +14,4 @@ const InvalidUsernameCharactersRegex = /[^A-Za-z0-9]+|^[^A-Za-z0-9]+|[^A-Za-z0-9
  * @returns {string} - The sanitized username.
  */
 export const sanitizeUsername = (username: string): string =>
-  username.replace(InvalidUsernameCharactersRegex, '_');
+  username.replace(invalidUsernameCharactersRegex, '_');
