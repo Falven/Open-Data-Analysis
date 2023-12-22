@@ -218,8 +218,7 @@ export class ConsoleChat {
 
     for (const toolInvocation of toolInvocations) {
       const { name, input, output } = toolInvocation;
-      const trailLength = Math.max(name.length, input.length, output.length);
-      const trail = chalk.yellow('-').repeat(trailLength);
+      const trail = chalk.yellow('-').repeat(100);
 
       console.log(trail);
       console.log(chalk.bold.yellow(name));
