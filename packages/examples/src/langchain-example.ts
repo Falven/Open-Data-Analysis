@@ -19,12 +19,12 @@ import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
 import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
-import { highlight } from 'cli-highlight';
 
 import { ConsoleChat, Conversation, Message } from './utils/console-chat.js';
 import { showAsciiProgress } from './utils/ascii.js';
 import { saveImage } from './utils/files.js';
 import { BaseCallbackConfig } from 'langchain/callbacks';
+import { toToolInvocation } from './utils/codeInterpreterUtils.js';
 
 /**
  * Define our chat model and it's parameters.
@@ -176,18 +176,9 @@ chat.generateAssistantResponse = async (
     id: message.id,
     role: 'assistant',
     content: output,
-    toolInvocations: runOutput.intermediateSteps?.map((step: any) => {
-      const { stdout, stderr } = JSON.parse(step.observation);
-      let output = stdout;
-      if (stderr) {
-        output += '\n' + stderr;
-      }
-      return {
-        name: step.action.tool,
-        input: highlight(step.action.toolInput.code, { language: 'python' }),
-        output,
-      };
-    }),
+    toolInvocations: runOutput.intermediateSteps?.map((step: any) =>
+      toToolInvocation(step.action.tool, step.action.toolInput, step.observation),
+    ),
   };
 };
 

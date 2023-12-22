@@ -6,11 +6,11 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { CodeInterpreter, CodeInterpreterFunction } from 'open-data-analysis/langchain/tools';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
-import { highlight } from 'cli-highlight';
 
 import { saveImage } from './utils/files.js';
 import { showAsciiProgress } from './utils/ascii.js';
 import { ConsoleChat, Conversation, Message, ToolInvocation } from './utils/console-chat.js';
+import { toToolInvocation } from './utils/codeInterpreterUtils.js';
 
 // The name of your Azure OpenAI Resource.
 // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
@@ -70,15 +70,9 @@ chat.onUserSettingsChange = (
       type: 'function',
       function: {
         function: async (args: CodeInterpreterFunction): Promise<string> => {
-          const input = highlight(args.code, { language: 'python' });
-          const result = await _call.bind(interpreter)(args);
-          const { stdout, stderr } = JSON.parse(result);
-          let output = stdout;
-          if (stderr) {
-            output += '\n' + stderr;
-          }
-          currentToolInvocations.push({ name, input, output });
-          return output;
+          const invocation = toToolInvocation(name, args, await _call.bind(interpreter)(args));
+          currentToolInvocations.push(invocation);
+          return invocation.output;
         },
         parse: (input: string): CodeInterpreterFunction => schema.parse(JSON.parse(input)),
         name,

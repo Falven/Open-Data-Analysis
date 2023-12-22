@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-
 import { ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
 
