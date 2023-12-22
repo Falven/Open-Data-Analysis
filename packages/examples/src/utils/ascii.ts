@@ -2,8 +2,9 @@ import chalk from 'chalk';
 import { ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
 
-export const showAsciiProgress = (userName: string): ServerStartupCallback => {
-  return (progressEvent: ProgressEvent) => {
+export const showAsciiProgress =
+  (userName: string): ServerStartupCallback =>
+  (progressEvent: ProgressEvent) => {
     const { progress } = progressEvent;
     const barLength = 20;
     const filledBarLength = Math.round((progress / 100) * barLength);
@@ -19,4 +20,3 @@ export const showAsciiProgress = (userName: string): ServerStartupCallback => {
       }`,
     );
   };
-};
