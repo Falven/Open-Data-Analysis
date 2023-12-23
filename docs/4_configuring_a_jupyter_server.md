@@ -6,7 +6,14 @@
 
 There is extensive documentation on [Jupyter Docker Stacks](https://jupyter-docker-stacks.readthedocs.io/en/latest/index.html) providing guidance on how to select a stack including details on the tools and features included in each. I recommend reading through this documentation to understand the options available if the stack we have selected does not work for you.
 
-I selected [singleuser-sample 3.2.1](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/main/images/singleuser-sample/Dockerfile) as my base image, for our use case, as it is the default image.
+I selected the [jupyter/base-notebook](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/selecting.html#jupyter-base-notebook) stack for its minimal yet sufficient featureset for our use case, including:
+
+- Everything in `jupyter/docker-stacks-foundation`
+- Minimally functional Server (e.g., no LaTeX support for saving notebooks as PDFs)
+- `notebook`, `jupyterhub`, and `jupyterlab` packages
+- A `start-notebook.py` script as the default command
+- A `start-singleuser.py` script useful for launching containers in JupyterHub
+- Options for a self-signed HTTPS certificate
 
 ## 4.2 Creating our custom Dockerfile
 
