@@ -85,7 +85,9 @@ export type CodeInterpreterFunctionSchemaType = typeof CodeInterpreterFunctionSc
 export type CodeInterpreterFunction = z.infer<CodeInterpreterFunctionSchemaType>;
 
 /**
- * A template to create our code interpreter tool prompt.
+ * A template for the code interpreter prompt.
+ * @param additionalInstructions Additional instructions for code interpretation.
+ * @returns The code interpreter prompt.
  */
 export const codeInterpreterPromptTemplate = (additionalInstructions?: string): string => {
   let prompt = `When you send a message containing Python code to code_interpreter, it will be executed in a stateful Jupyter notebook environment. The directory at '${mountPath}' can be used to save and persist user files. Internet access for this session is disabled. Do not make external web requests or API calls as they will fail.`;
