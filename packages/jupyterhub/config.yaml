@@ -59,8 +59,9 @@ imagePullSecrets:
   - name: azure-container-registry
 singleuser:
   image:
+    pullPolicy: Always
     name: <my-acr-name>.azurecr.io/singleuser
-    tag: 3.2.1
+    tag: latest
   initContainers:
     - name: volume-permissions
       image: busybox
