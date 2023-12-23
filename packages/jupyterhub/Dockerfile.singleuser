@@ -1,4 +1,4 @@
-FROM quay.io/jupyterhub/k8s-singleuser-sample:3.2.1
+FROM quay.io/jupyter/base-notebook:latest
 
 # Install packages to use for Code Interpretation
 COPY requirements.txt requirements.txt
