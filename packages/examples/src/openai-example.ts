@@ -84,9 +84,9 @@ chat.onUserSettingsChange = (
 };
 
 chat.generateAssistantResponse = async function* generateAssistantResponse(
-  username: string,
-  conversation: Conversation,
-  message: Message,
+  _username: string,
+  _conversation: Conversation,
+  _message: Message,
 ): AsyncGenerator<Message, void, void> {
   currentToolInvocations.length = 0;
 
