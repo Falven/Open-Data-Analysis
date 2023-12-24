@@ -23,12 +23,12 @@ export type MarkdownLinkProcessorOptions = {
  * Class responsible for processing markdown text and replacing specific link formats.
  */
 export class MarkdownLinkProcessor extends TokenProcessor {
+  // How many partial links to tolerate before flushing the buffer.
+  public static readonly DefaultPartialLinkThreshold: number = 5;
   // https://regex101.com/r/ljmUDe
   private static readonly MarkdownLinkRegex = /\[[^\]]*\]\((sandbox:([^)]+))\)/g;
   // https://regex101.com/r/fvvmQy/1
   private static readonly PartialMarkdownLinkRegex = /\[[^\]]*\]?\(?s?a?n?d?b?o?x?:?([^)]*)\)?/;
-  // How many partial links to tolerate before flushing the buffer.
-  private static readonly DefaultPartialLinkThreshold: number = 5;
 
   // Buffer to accumulate text for processing.
   private textBuffer: string;

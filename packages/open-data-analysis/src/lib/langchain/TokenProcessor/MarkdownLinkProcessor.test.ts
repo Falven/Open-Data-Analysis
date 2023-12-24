@@ -47,4 +47,29 @@ describe('MarkdownLinkProcessor', async () => {
     const expected = '[incomplete link text](replaced-link:/mnt/data/file5.txt)';
     assert.strictEqual(output, expected);
   });
+
+  await test('Handle unclosed markdown link with token threshold', () => {
+    const processor = new MarkdownLinkProcessor({
+      linkReplacer: LinkReplacer,
+    });
+    let output = '';
+    const inputs = [
+      '[unclosed link',
+      ' text](sandbo',
+      'x:/mnt/data/',
+      'file6.txt',
+      ' and some other text',
+    ];
+
+    // Process each token and append to output
+    inputs.forEach((input) => (output += processor.processToken(input)));
+
+    // Expected output should not contain a properly formed markdown link
+    const expected = inputs.join('');
+    assert.strictEqual(
+      output,
+      expected,
+      'Unclosed markdown link should not be processed as a link',
+    );
+  });
 });
