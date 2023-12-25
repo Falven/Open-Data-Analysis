@@ -10,4 +10,11 @@ export abstract class TokenProcessor {
    * @returns {string} The processed text.
    */
   abstract processToken(token: string): string;
+
+  /**
+   * Abstract method to flush the internal buffer.
+   * Subclasses should implement this method to define their specific flushing logic.
+   * @returns {string} The processed text.
+   */
+  abstract flush(): string;
 }

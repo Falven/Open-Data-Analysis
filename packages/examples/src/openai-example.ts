@@ -121,6 +121,11 @@ chat.generateAssistantResponse = async function* generateAssistantResponse(
 
     yield messageChunk;
   }
+
+  if (messageChunk !== undefined) {
+    messageChunk.content = tokenProcessor.flush();
+    yield messageChunk;
+  }
 };
 
 chat.onUserMessage = async (

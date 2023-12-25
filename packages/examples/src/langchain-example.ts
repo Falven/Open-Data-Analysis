@@ -168,7 +168,8 @@ chat.generateAssistantResponse = async (
   const input = message.content;
   const runOutput = await Executor.invoke({ input });
 
-  const output = TokenProcessor.processToken(runOutput.output);
+  let output = TokenProcessor.processToken(runOutput.output);
+  output += TokenProcessor.flush();
 
   await Memory.saveContext({ input }, { output });
 

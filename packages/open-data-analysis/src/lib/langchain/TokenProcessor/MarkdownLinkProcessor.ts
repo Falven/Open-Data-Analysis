@@ -24,7 +24,7 @@ export type MarkdownLinkProcessorOptions = {
  */
 export class MarkdownLinkProcessor extends TokenProcessor {
   // How many partial links to tolerate before flushing the buffer.
-  public static readonly DefaultPartialLinkThreshold: number = 5;
+  public static readonly DefaultPartialLinkThreshold: number = 30;
   // https://regex101.com/r/ljmUDe
   private static readonly MarkdownLinkRegex = /\[[^\]]*\]\((sandbox:([^)]+))\)/g;
   // https://regex101.com/r/fvvmQy/1
@@ -60,7 +60,7 @@ export class MarkdownLinkProcessor extends TokenProcessor {
    * @param {string} token - A piece of text to be processed.
    * @returns {string} The processed text with replaced Markdown links.
    */
-  processToken = (token: string): string => {
+  processToken(token: string): string {
     this.textBuffer += token;
 
     let output = '';
@@ -68,6 +68,8 @@ export class MarkdownLinkProcessor extends TokenProcessor {
 
     // Process each match of the full markdown link pattern.
     while ((match = MarkdownLinkProcessor.MarkdownLinkRegex.exec(this.textBuffer))) {
+      this.partialLinkCount = 0;
+
       const [fullMatch, firstGroup, secondGroup] = match;
 
       // Add text preceding the current match to the output.
@@ -95,5 +97,12 @@ export class MarkdownLinkProcessor extends TokenProcessor {
       this.partialLinkCount = 0;
       return output;
     }
-  };
+  }
+
+  flush(): string {
+    const output = this.textBuffer;
+    this.textBuffer = '';
+    this.partialLinkCount = 0;
+    return output;
+  }
 }

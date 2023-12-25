@@ -13,7 +13,7 @@
   ],
   "configurations": [
     {
-      "name": "Run Examples",
+      "name": "Debug Examples",
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/examples",
       "runtimeExecutable": "pnpm",
@@ -24,7 +24,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Run Tests",
+      "name": "Debug Tests",
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/open-data-analysis",
       "runtimeExecutable": "pnpm",

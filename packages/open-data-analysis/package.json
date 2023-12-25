@@ -49,7 +49,7 @@
     "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\"",
     "build:esm": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --lib",
     "build:tsc": "tsc --emitDeclarationOnly",
-    "test": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --test"
+    "test": "pnpm node --inspect --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --test"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.17.0",
