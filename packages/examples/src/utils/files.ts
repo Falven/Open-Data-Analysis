@@ -1,21 +1,24 @@
 import { createReadStream } from 'node:fs';
-import { writeFile, stat } from 'node:fs/promises';
+import { writeFile, stat, readdir } from 'node:fs/promises';
 import { Readable } from 'node:stream';
+import { homedir } from 'node:os';
 import { dirname, join, basename, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import chalk from 'chalk';
-
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
-import { homedir } from 'node:os';
+
+const processFilePath = (filePath: string): string => {
+  const expandedPath = filePath.startsWith('~') ? filePath.replace('~', homedir()) : filePath;
+  const resolvedPath = resolve(expandedPath);
+  return normalize(resolvedPath);
+};
 
 export const readFile = async (
   filePath: string,
 ): Promise<[string, Readable, number] | undefined> => {
   try {
-    const expandedPath = filePath.startsWith('~') ? filePath.replace('~', homedir()) : filePath;
-    const resolvedPath = resolve(expandedPath);
-    const normalizedPath = normalize(resolvedPath);
+    const normalizedPath = processFilePath(filePath);
     const stats = await stat(normalizedPath);
     return [basename(normalizedPath), createReadStream(normalizedPath), stats.size];
   } catch (error) {
@@ -43,4 +46,18 @@ export const saveImage: DisplayCallback = async (
   );
   await writeFile(imagePath, imageData);
   return;
+};
+
+export const getCompletions = async (filePath: string): Promise<string[]> => {
+  const normalizedPath = processFilePath(filePath);
+  const dir = dirname(normalizedPath);
+  const base = basename(normalizedPath);
+
+  try {
+    const files = await readdir(dir || '.');
+    const hits = files.filter((file) => file.startsWith(base)).map((file) => join(dir, file));
+    return hits;
+  } catch (error) {
+    return [];
+  }
 };

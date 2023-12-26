@@ -1,11 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { isPromise } from 'node:util/types';
-import { createInterface } from 'node:readline';
+import { AsyncCompleter, CompleterResult, createInterface } from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import prompts from 'prompts';
 import 'reflect-metadata';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import chalk from 'chalk';
+import { getCompletions } from './files.js';
 
 export type ToolInvocation = {
   name: string;
@@ -385,6 +386,32 @@ export class ConsoleChat {
     console.log(chalk.blue.bold('  .exit: ') + chalk.blue('Save and exit'));
   }
 
+  private completer: AsyncCompleter = (
+    line: string,
+    callback: (err?: Error | null | undefined, result?: CompleterResult | undefined) => void,
+  ): void => {
+    const tokens = line.split(/\s+/);
+
+    if (tokens[0] !== Command.Upload || tokens.length < 1) {
+      callback(null, [[], line]);
+      return;
+    }
+
+    const lastToken = tokens.at(-1);
+    if (lastToken === undefined) {
+      callback(null, [[], line]);
+      return;
+    }
+
+    getCompletions(lastToken)
+      .then((hits: string[]) => {
+        callback(null, [hits, tokens[1]]);
+      })
+      .catch((err) => {
+        callback(err);
+      });
+  };
+
   private async promptForMessage(): Promise<Command> {
     const command: Command = await new Promise<Command>((resolve, reject) => {
       if (this.currentConversation === undefined) {
@@ -400,6 +427,7 @@ export class ConsoleChat {
         terminal: true,
         history,
         prompt: chalk.bold(`${FriendlyRole.User}: `),
+        completer: this.completer.bind(this),
       });
 
       rl.on('SIGINT', (): void => resolve(Command.Exit));
