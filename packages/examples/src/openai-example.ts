@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { JSONSchema } from 'openai/lib/jsonschema.mjs';
@@ -17,7 +18,6 @@ import {
   ToolInvocation,
 } from './utils/console-chat.js';
 import { toToolInvocation } from './utils/codeInterpreterUtils.js';
-import { randomUUID } from 'node:crypto';
 
 // The name of your Azure OpenAI Resource.
 // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
@@ -40,7 +40,6 @@ const openAI = new OpenAI({
 });
 
 let memory: ChatCompletionMessageParam[];
-
 let interpreter: CodeInterpreter;
 let tools: RunnableTools<CodeInterpreterFunction[]>;
 
