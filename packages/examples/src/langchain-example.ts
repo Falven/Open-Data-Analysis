@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { AgentExecutor } from 'langchain/agents';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { ChatPromptTemplate, MessagesPlaceholder } from 'langchain/prompts';
@@ -17,13 +18,13 @@ import {
 } from 'langchain/agents/openai/output_parser';
 import { BufferMemory } from 'langchain/memory';
 import { formatToOpenAIToolMessages } from 'langchain/agents/format_scratchpad/openai_tools';
+import { BaseCallbackConfig } from 'langchain/callbacks';
 import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
-import { ConsoleChat, Conversation, Message } from './utils/console-chat.js';
-import { onSingleUserServerProgress } from './utils/ascii.js';
-import { saveImage } from './utils/files.js';
-import { BaseCallbackConfig } from 'langchain/callbacks';
+import { ConsoleChat, Conversation, Message, MessageRole } from './utils/console-chat.js';
+import { onFileUploadProgress, onSingleUserServerProgress } from './utils/ascii.js';
+import { readFile, saveImage } from './utils/files.js';
 import { toToolInvocation } from './utils/codeInterpreterUtils.js';
 
 /**
@@ -37,19 +38,19 @@ const Model = new ChatOpenAI({ temperature: 0, verbose: false });
  * variables: history, input, output.
  * `returnMessages`: returns messages in a list instead of a string - better for Chat models.
  */
-const Memory = new BufferMemory({
+const memory = new BufferMemory({
   memoryKey: 'chat_history',
   inputKey: 'input',
   outputKey: 'output',
   returnMessages: true,
 });
 
-let Interpreter: CodeInterpreter;
-let Tools: StructuredTool[];
+let interpreter: CodeInterpreter;
+let tools: StructuredTool[];
 
-const TokenProcessor = new MarkdownLinkProcessor(
+const tokenProcessor = new MarkdownLinkProcessor(
   (markdownLink: string, url: string, path: string): string =>
-    markdownLink.replace(url, Interpreter.getSASURL(path)),
+    markdownLink.replace(url, interpreter.getSASURL(path)),
 );
 
 let Agent: RunnableBinding<
@@ -67,22 +68,22 @@ chat.onUserSettingsChange = (
   conversation: Conversation,
   useHub: boolean,
 ): void => {
-  Memory.clear();
+  memory.clear();
 
   for (const { role, content } of conversation.messages) {
     switch (role) {
-      case 'system':
-        Memory.chatHistory.addMessage(new SystemMessage(content));
+      case MessageRole.System:
+        memory.chatHistory.addMessage(new SystemMessage(content));
         break;
-      case 'assistant':
-        Memory.chatHistory.addAIChatMessage(content);
+      case MessageRole.Assistant:
+        memory.chatHistory.addAIChatMessage(content);
         break;
-      default:
-        Memory.chatHistory.addUserMessage(content);
+      case MessageRole.User:
+        memory.chatHistory.addUserMessage(content);
     }
   }
 
-  Interpreter = new CodeInterpreter({
+  interpreter = new CodeInterpreter({
     userId: userName,
     conversationId: conversation.id,
     useHub,
@@ -90,7 +91,7 @@ chat.onUserSettingsChange = (
     onDisplayData: saveImage,
   });
 
-  Tools = [Interpreter];
+  tools = [interpreter];
 
   /**
    * Enhance our model with openai tools.
@@ -98,7 +99,7 @@ chat.onUserSettingsChange = (
    * to format our tools into the proper schema for OpenAI.
    */
   const modelWithTools = Model.bind({
-    tools: Tools.map(formatToOpenAITool),
+    tools: tools.map(formatToOpenAITool),
   });
 
   type UserInput = {
@@ -133,7 +134,7 @@ chat.onUserSettingsChange = (
     (RunnablePassthrough<AgentInput>).assign({
       agent_scratchpad: ({ steps }) => formatToOpenAIToolMessages(steps as ToolsAgentStep[]),
       chat_history: async (): Promise<BaseMessage[]> =>
-        (await Memory.loadMemoryVariables({})).chat_history,
+        (await memory.loadMemoryVariables({})).chat_history,
     }),
     // Invoke the prompt.
     prompt,
@@ -143,7 +144,7 @@ chat.onUserSettingsChange = (
     (message: AIMessage): Promise<AgentAction[] | AgentFinish> => {
       const content = message.content;
       if (typeof content === 'string') {
-        message.content = TokenProcessor.processToken(content);
+        message.content = tokenProcessor.processToken(content);
       }
       return new OpenAIToolsAgentOutputParser().invoke(message);
     },
@@ -154,8 +155,8 @@ chat.onUserSettingsChange = (
    */
   Executor = AgentExecutor.fromAgentAndTools({
     agent: Agent,
-    tools: Tools,
-    memory: Memory,
+    tools: tools,
+    memory: memory,
     returnIntermediateSteps: true,
   });
 };
@@ -168,18 +169,38 @@ chat.generateAssistantResponse = async (
   const input = message.content;
   const runOutput = await Executor.invoke({ input });
 
-  let output = TokenProcessor.processToken(runOutput.output);
-  output += TokenProcessor.flush();
+  let output = tokenProcessor.processToken(runOutput.output);
+  output += tokenProcessor.flush();
 
-  await Memory.saveContext({ input }, { output });
+  await memory.saveContext({ input }, { output });
 
   return {
     id: message.id,
-    role: 'assistant',
+    role: MessageRole.Assistant,
     content: output,
     toolInvocations: runOutput.intermediateSteps?.map((step: any) =>
       toToolInvocation(step.action.tool, step.action.toolInput, step.observation),
     ),
+  };
+};
+
+chat.handleUpload = async (
+  _username: string,
+  _conversation: Conversation,
+  filePath: string,
+): Promise<void | Message> => {
+  const result = await readFile(filePath);
+  if (result === undefined) {
+    return;
+  }
+
+  const content = await interpreter.uploadFile(...result, onFileUploadProgress);
+
+  memory.chatHistory.addMessage(new SystemMessage(content));
+  return {
+    id: randomUUID(),
+    role: MessageRole.System,
+    content,
   };
 };
 
