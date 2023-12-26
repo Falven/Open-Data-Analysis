@@ -4,3 +4,4 @@ pandas
 openpyxl
 PyPDF2
 faker
+scipy
