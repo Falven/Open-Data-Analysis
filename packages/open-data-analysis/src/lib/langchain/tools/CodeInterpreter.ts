@@ -1,4 +1,6 @@
 import { posix } from 'node:path';
+import { isPromise } from 'node:util/types';
+import { Readable } from 'node:stream';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 import { z } from 'zod';
@@ -26,8 +28,10 @@ import {
 } from 'open-data-analysis/jupyter/hub';
 import {
   getEnvOrThrow,
+  uploadToUserConvBlob,
   generateUserConvBlobSASURI,
   sanitizeUsername,
+  UploadProgressCb,
 } from 'open-data-analysis/utils';
 
 const mountPath = getEnvOrThrow('AZURE_STORAGE_MOUNT_PATH');
@@ -217,12 +221,15 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
       );
 
       // Invoke callback indicating that an image has been generated.
-      const handleDisplayData: DisplayCallback = (base64ImageData: string): string => {
+      const handleDisplayData: DisplayCallback = async (
+        base64ImageData: string,
+      ): Promise<string> => {
         let result: string | undefined;
         if (this.onDisplayData !== undefined) {
-          result = this.onDisplayData(base64ImageData);
+          const cbResult = this.onDisplayData(base64ImageData);
+          result = isPromise(cbResult) ? await cbResult : cbResult;
         }
-        return result ?? 'An image has been generated and displayed to the user.';
+        return result ?? Promise.resolve('An image has been generated and displayed to the user.');
       };
 
       // Execute the code and get the result.
@@ -245,6 +252,32 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
       console.error(error);
       // Inform the Assistant that a tool invocation error has occurred.
       return "There was an error executing the user's code. Please try again later.";
+    }
+  }
+
+  /**
+   * Upload a file to the user's conversation blob.
+   * @param path The path to the file to upload.
+   */
+  async uploadFile(
+    name: string,
+    fileStream: Readable,
+    fileSizeBytes: number,
+    onProgress?: UploadProgressCb,
+  ): Promise<string> {
+    try {
+      await uploadToUserConvBlob(
+        this.userId,
+        this.conversationId,
+        name,
+        fileStream,
+        fileSizeBytes,
+        onProgress,
+      );
+      return `User uploaded file ${name} to: ${mountPath}/${name}.`;
+    } catch (error) {
+      console.error(error);
+      return `There was an error uploading the file ${name}.`;
     }
   }
 

@@ -7,10 +7,17 @@ import { CodeInterpreter, CodeInterpreterFunction } from 'open-data-analysis/lan
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
-import { saveImage } from './utils/files.js';
-import { showAsciiProgress } from './utils/ascii.js';
-import { ConsoleChat, Conversation, Message, ToolInvocation } from './utils/console-chat.js';
+import { readFile, saveImage } from './utils/files.js';
+import { onFileUploadProgress, onSingleUserServerProgress } from './utils/ascii.js';
+import {
+  ConsoleChat,
+  Conversation,
+  Message,
+  MessageRole,
+  ToolInvocation,
+} from './utils/console-chat.js';
 import { toToolInvocation } from './utils/codeInterpreterUtils.js';
+import { randomUUID } from 'node:crypto';
 
 // The name of your Azure OpenAI Resource.
 // https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
@@ -37,10 +44,10 @@ let memory: ChatCompletionMessageParam[];
 let interpreter: CodeInterpreter;
 let tools: RunnableTools<CodeInterpreterFunction[]>;
 
-const tokenProcessor = new MarkdownLinkProcessor({
-  linkReplacer: (markdownLink: string, url: string, path: string): string =>
+const tokenProcessor = new MarkdownLinkProcessor(
+  (markdownLink: string, url: string, path: string): string =>
     markdownLink.replace(url, interpreter.getSASURL(path)),
-});
+);
 
 const chat = new ConsoleChat();
 
@@ -60,7 +67,7 @@ chat.onUserSettingsChange = (
     userId: userName,
     conversationId: conversation.id,
     useHub,
-    onServerStartup: showAsciiProgress(userName),
+    onServerStartup: onSingleUserServerProgress(userName),
     onDisplayData: saveImage,
   });
 
@@ -111,7 +118,7 @@ chat.generateAssistantResponse = async function* generateAssistantResponse(
     if (messageChunk === undefined) {
       messageChunk = {
         id: chunk.id,
-        role: 'assistant',
+        role: MessageRole.Assistant,
         content: processedContent,
         toolInvocations: currentToolInvocations,
       };
@@ -142,6 +149,26 @@ chat.onAssistantMessage = async (
   { content }: Message,
 ): Promise<void> => {
   memory.push({ role: 'assistant', content });
+};
+
+chat.handleUpload = async (
+  _username: string,
+  _conversation: Conversation,
+  filePath: string,
+): Promise<void | Message> => {
+  const result = await readFile(filePath);
+  if (result === undefined) {
+    return;
+  }
+
+  const content = await interpreter.uploadFile(...result, onFileUploadProgress);
+
+  memory.push({ role: 'system', content });
+  return {
+    id: randomUUID(),
+    role: MessageRole.System,
+    content,
+  };
 };
 
 chat.onExit = async (): Promise<void> => await chat.save();

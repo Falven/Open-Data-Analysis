@@ -3,12 +3,12 @@ import assert from 'node:assert';
 
 import { MarkdownLinkProcessor } from './MarkdownLinkProcessor.js';
 
-const LinkReplacer = (markdownLink: string, url: string, path: string): string =>
+const linkReplacer = (markdownLink: string, url: string, path: string): string =>
   markdownLink.replace(url, `replaced-link:${path}`);
 
 describe('MarkdownLinkProcessor', async () => {
   await test('Process complete markdown link', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = ['something something [link text](sandbox:/mnt/data/file1.txt) something'];
 
@@ -25,7 +25,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Process partial markdown links in sequence', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = ['[part', 'ial link te', 'xt](sandbox:/mnt/data/file2.txt)'];
 
@@ -42,7 +42,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Process multiple markdown links', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = [
       '[link1](sandbox:/mnt/data/file3.txt) and [link2](sandbox:/mnt/data/file4.txt)',
@@ -62,7 +62,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Process text with no markdown links', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = ['No link here'];
 
@@ -75,7 +75,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Process text with no markdown links', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = [
       '[link1',
@@ -101,7 +101,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Process incomplete markdown link followed by completion', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = ['[incomplete link text](sandbox:/mnt/data/', 'file5.txt)'];
 
@@ -114,7 +114,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Handle unclosed markdown link with token threshold', () => {
-    const processor = new MarkdownLinkProcessor({ linkReplacer: LinkReplacer });
+    const processor = new MarkdownLinkProcessor(linkReplacer);
 
     const inputs = [
       '[unclosed link',
@@ -137,10 +137,7 @@ describe('MarkdownLinkProcessor', async () => {
   });
 
   await test('Processor should output unmodified partial markdown link with 31 tokens', () => {
-    const processor = new MarkdownLinkProcessor({
-      linkReplacer: LinkReplacer,
-      partialLinkThreshold: 30,
-    });
+    const processor = new MarkdownLinkProcessor(linkReplacer, 30);
 
     const inputs = ['[link text](', ...Array.from({ length: 31 }, (_, i) => `part${i}`)];
 

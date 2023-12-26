@@ -108,6 +108,9 @@ importers:
 
   packages/open-data-analysis:
     dependencies:
+      '@azure/core-http':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@azure/storage-blob':
         specifier: ^12.17.0
         version: 12.17.0

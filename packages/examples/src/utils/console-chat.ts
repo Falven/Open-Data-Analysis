@@ -13,9 +13,27 @@ export type ToolInvocation = {
   output: string;
 };
 
+export enum MessageRole {
+  System = 'system',
+  User = 'user',
+  Assistant = 'assistant',
+}
+
+export enum FriendlyRole {
+  System = 'System',
+  User = 'You',
+  Assistant = 'Assistant',
+}
+
+const roleMapping: Record<MessageRole, FriendlyRole> = {
+  [MessageRole.System]: FriendlyRole.System,
+  [MessageRole.User]: FriendlyRole.User,
+  [MessageRole.Assistant]: FriendlyRole.Assistant,
+};
+
 export type Message = {
   id: string;
-  role: string;
+  role: MessageRole;
   content: string;
   toolInvocations?: ToolInvocation[];
 };
@@ -57,6 +75,12 @@ export type OnUserSettingsChangeCb = (
   useHub: boolean,
 ) => void | Promise<void>;
 
+export type HandleUploadCb = (
+  username: string,
+  conversation: Conversation,
+  filePath: string,
+) => Message | void | Promise<Message | void>;
+
 export type OnUserMessageCb = (
   username: string,
   conversation: Conversation,
@@ -76,10 +100,12 @@ export enum Command {
   SelectUser = '.user',
   SelectConversation = '.conversation',
   ConfirmHub = '.hub',
+  Upload = '.upload',
+  Help = '.help',
 }
 
-export const isCommand = (value: string): value is Command =>
-  Object.values(Command).includes(value as Command);
+export const isCommand = (input: string): input is Command =>
+  Object.values(Command).find((value: Command) => input.includes(value)) !== undefined;
 
 export class ConsoleChat {
   private static ChatFile = 'chat.json';
@@ -89,6 +115,7 @@ export class ConsoleChat {
   private currentConversation: Conversation | undefined;
   private useHub: boolean | undefined;
   private _generateAssistantResponse: GenerateAssistantResponse;
+  private _handleUpload?: HandleUploadCb;
   private _onUserSettingsChange?: OnUserSettingsChangeCb;
   private _onUserMessage?: OnUserMessageCb;
   private _onAssistantMessage?: OnAssistantMessageCb;
@@ -98,13 +125,17 @@ export class ConsoleChat {
     this.chatMap = {};
     this._generateAssistantResponse = (): Message => ({
       id: '-1',
-      role: 'system',
+      role: MessageRole.System,
       content: chalk.redBright('You must implement generateAssistantResponse()!'),
     });
   }
 
   set generateAssistantResponse(callback: GenerateAssistantResponse) {
     this._generateAssistantResponse = callback;
+  }
+
+  set handleUpload(callback: HandleUploadCb) {
+    this._handleUpload = callback;
   }
 
   set onUserSettingsChange(callback: OnUserSettingsChangeCb) {
@@ -198,16 +229,45 @@ export class ConsoleChat {
       conversation === null ? this.createNewConversation(this.currentUser) : conversation;
   }
 
+  private async raiseFileUpload(filePath: string): Promise<void> {
+    try {
+      if (this?._handleUpload === undefined) {
+        return;
+      }
+
+      if (!filePath) {
+        console.error(chalk.red('No file path provided for upload.'));
+        return;
+      }
+
+      if (this.currentUser === undefined) {
+        throw new Error("Unexpected 'undefined' encountered for 'currentUser'");
+      }
+
+      if (this.currentConversation === undefined) {
+        throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
+      }
+
+      const result = this._handleUpload(this.currentUser, this.currentConversation, filePath);
+      const systemMessage = isPromise(result) ? await result : result;
+
+      if (systemMessage !== undefined) {
+        this.currentConversation.messages.push(systemMessage);
+      }
+    } catch (error) {
+      console.error(chalk.red(error));
+    }
+  }
+
   logCurrentConversation() {
     if (this.currentConversation === undefined) {
       throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
     }
 
+    console.log(chalk.bold(`Start of conversation ${this.currentConversation.id}:`));
+
     for (const message of this.currentConversation.messages) {
-      if (message.role === 'system') {
-        continue;
-      }
-      console.log(`${message.role === 'user' ? 'You' : 'Assistant'}: ${message.content}`);
+      console.log(`${roleMapping[message.role]}: ${message.content}`);
     }
   }
 
@@ -280,7 +340,7 @@ export class ConsoleChat {
     );
 
     let message: Message | undefined = undefined;
-    process.stdout.write(chalk.bold('Assistant: '));
+    process.stdout.write(chalk.bold(`${FriendlyRole.Assistant}: `));
 
     if (isAsyncIterable(assistantResponse)) {
       message = await this.logStreamingResponse(assistantResponse);
@@ -318,6 +378,10 @@ export class ConsoleChat {
       chalk.blue.bold('  .hub: ') +
         chalk.blue('Whether to connect to a JupyterHub or Jupyter Server instance'),
     );
+    console.log(
+      chalk.blue.bold('  .upload <file>: ') +
+        chalk.blue('Upload a file to the current conversation'),
+    );
     console.log(chalk.blue.bold('  .exit: ') + chalk.blue('Save and exit'));
   }
 
@@ -328,28 +392,21 @@ export class ConsoleChat {
         return;
       }
 
-      const history = this.currentConversation.messages.reduce(
-        (acc: string[], message: Message) => {
-          if (message.role === 'user') {
-            acc.push(message.content);
-          }
-          return acc;
-        },
-        [],
-      );
+      const history = this.currentConversation.messages.map((message: Message) => message.content);
 
       const rl = createInterface({
         input: process.stdin,
         output: process.stdout,
         terminal: true,
         history,
-        prompt: chalk.bold('You: '),
+        prompt: chalk.bold(`${FriendlyRole.User}: `),
       });
 
       rl.on('SIGINT', (): void => resolve(Command.Exit));
 
       rl.on('line', async (input: string): Promise<void> => {
         const trimmedInput = input.trim();
+
         if (isCommand(trimmedInput)) {
           rl.close();
           resolve(trimmedInput);
@@ -361,7 +418,7 @@ export class ConsoleChat {
             throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
           }
 
-          const userMessage = { id: randomUUID(), role: 'user', content: input };
+          const userMessage: Message = { id: randomUUID(), role: MessageRole.User, content: input };
 
           this.currentConversation.messages.push(userMessage);
 
@@ -379,14 +436,19 @@ export class ConsoleChat {
           rl.prompt();
         }
       });
+
       rl.prompt();
     });
+
     return command;
   }
 
   async loop(): Promise<void> {
-    let command: Command = Command.ConfirmHub;
+    let message: string = Command.ConfirmHub;
+
     while (true) {
+      let [command, arg] = message.split(/\s+/) as [Command, string];
+
       switch (command) {
         case Command.Exit:
           const exitCb = this?._onExit?.();
@@ -396,6 +458,13 @@ export class ConsoleChat {
 
           console.log('Exiting...');
           process.exit(0);
+        case Command.Help:
+          this.logCommands();
+          break;
+        case Command.Upload:
+          const filePath = arg.trim();
+          await this.raiseFileUpload(filePath);
+          break;
         case Command.ConfirmHub:
           await this.promptForUseHub();
         case Command.SelectUser:
@@ -404,28 +473,37 @@ export class ConsoleChat {
           await this.promptForConversation();
           this.logCommands();
           this.logCurrentConversation();
-        default:
-          if (this.currentUser === undefined) {
-            throw new Error("Unexpected 'undefined' encountered for 'currentUser'");
-          }
-          if (this.currentConversation === undefined) {
-            throw new Error("Unexpected 'undefined' encountered for 'currentConversation'");
-          }
-          if (this.useHub === undefined) {
-            throw new Error("Unexpected 'undefined' encountered for 'useHub'");
-          }
-
-          const settingsCb = this?._onUserSettingsChange?.(
-            this.currentUser,
-            this.currentConversation,
-            this.useHub,
-          );
-          if (isPromise(settingsCb)) {
-            await settingsCb;
-          }
-
-          command = await this.promptForMessage();
       }
+
+      if (this.currentUser === undefined) {
+        command = Command.SelectUser;
+        continue;
+      }
+      if (this.currentConversation === undefined) {
+        command = Command.SelectConversation;
+        continue;
+      }
+      if (this.useHub === undefined) {
+        command = Command.ConfirmHub;
+        continue;
+      }
+
+      if (
+        command === Command.SelectUser ||
+        command === Command.SelectConversation ||
+        command === Command.ConfirmHub
+      ) {
+        const settingsCb = this?._onUserSettingsChange?.(
+          this.currentUser,
+          this.currentConversation,
+          this.useHub,
+        );
+        if (isPromise(settingsCb)) {
+          await settingsCb;
+        }
+      }
+
+      message = await this.promptForMessage();
     }
   }
 

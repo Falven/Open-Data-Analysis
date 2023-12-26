@@ -14,10 +14,7 @@ export type LinkReplacementFunction = (markdownLink: string, url: string, path: 
  * @param linkReplacer - Function that replaces a markdown link with a custom format.
  * @param partialLinkThreshold - Optional. The maximum number of consecutive partial markdown links allowed in the buffer before it's flushed. Helps prevent memory issues with large amounts of unprocessed text. Default is 5.
  */
-export type MarkdownLinkProcessorOptions = {
-  linkReplacer: LinkReplacementFunction;
-  partialLinkThreshold?: number;
-};
+export type MarkdownLinkProcessorOptions = {};
 
 /**
  * Class responsible for processing markdown text and replacing specific link formats.
@@ -33,11 +30,8 @@ export class MarkdownLinkProcessor extends TokenProcessor {
   // Buffer to accumulate text for processing.
   private textBuffer: string;
 
-  // Function to construct a replacement link.
-  private linkReplacer: LinkReplacementFunction;
-
   // How many partial links we have matched.
-  private partialLinkCount: number = 0;
+  private partialLinkCount: number;
 
   private partialLinkThreshold: number;
 
@@ -45,13 +39,13 @@ export class MarkdownLinkProcessor extends TokenProcessor {
    * Constructs a MarkdownLinkProcessor instance.
    * @param {MarkdownLinkProcessorOptions} options - Configuration options including the custom link constructor function.
    */
-  constructor({
-    linkReplacer,
-    partialLinkThreshold = MarkdownLinkProcessor.DefaultPartialLinkThreshold,
-  }: MarkdownLinkProcessorOptions) {
+  constructor(
+    private linkReplacer: LinkReplacementFunction,
+    partialLinkThreshold: number = MarkdownLinkProcessor.DefaultPartialLinkThreshold,
+  ) {
     super();
     this.textBuffer = '';
-    this.linkReplacer = linkReplacer;
+    this.partialLinkCount = 0;
     this.partialLinkThreshold = partialLinkThreshold;
   }
 

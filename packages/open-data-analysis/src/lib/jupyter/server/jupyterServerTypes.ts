@@ -3,7 +3,7 @@ import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
 /**
  * A callback invoked as a single-user server is starting up.
  */
-export type ServerStartupCallback = (progressEvent: ProgressEvent) => void;
+export type ServerStartupCallback = (progressEvent: ProgressEvent) => void | Promise<void>;
 
 /**
  * A callback invoked whenever a figure is generated.
@@ -11,4 +11,6 @@ export type ServerStartupCallback = (progressEvent: ProgressEvent) => void;
  * @param base64ImageData The base64 encoded image data.
  * @returns {string} Any content to be appended to the executionResult.
  */
-export type DisplayCallback = (base64ImageData: string) => string | undefined;
+export type DisplayCallback = (
+  base64ImageData: string,
+) => (string | undefined) | Promise<string | undefined>;

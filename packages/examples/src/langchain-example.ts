@@ -21,7 +21,7 @@ import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
 import { ConsoleChat, Conversation, Message } from './utils/console-chat.js';
-import { showAsciiProgress } from './utils/ascii.js';
+import { onSingleUserServerProgress } from './utils/ascii.js';
 import { saveImage } from './utils/files.js';
 import { BaseCallbackConfig } from 'langchain/callbacks';
 import { toToolInvocation } from './utils/codeInterpreterUtils.js';
@@ -47,10 +47,10 @@ const Memory = new BufferMemory({
 let Interpreter: CodeInterpreter;
 let Tools: StructuredTool[];
 
-const TokenProcessor = new MarkdownLinkProcessor({
-  linkReplacer: (markdownLink: string, url: string, path: string): string =>
+const TokenProcessor = new MarkdownLinkProcessor(
+  (markdownLink: string, url: string, path: string): string =>
     markdownLink.replace(url, Interpreter.getSASURL(path)),
-});
+);
 
 let Agent: RunnableBinding<
   Record<string, unknown>,
@@ -86,7 +86,7 @@ chat.onUserSettingsChange = (
     userId: userName,
     conversationId: conversation.id,
     useHub,
-    onServerStartup: showAsciiProgress(userName),
+    onServerStartup: onSingleUserServerProgress(userName),
     onDisplayData: saveImage,
   });
 

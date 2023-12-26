@@ -52,6 +52,7 @@
     "test": "pnpm node --inspect --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --test"
   },
   "dependencies": {
+    "@azure/core-http": "^3.0.4",
     "@azure/storage-blob": "^12.17.0",
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
