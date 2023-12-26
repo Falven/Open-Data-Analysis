@@ -3,5 +3,6 @@ matplotlib
 pandas
 openpyxl
 PyPDF2
-faker
 scipy
+seaborn
+faker
