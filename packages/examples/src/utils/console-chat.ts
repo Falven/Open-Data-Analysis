@@ -25,7 +25,7 @@ export enum FriendlyRole {
   Assistant = 'Assistant',
 }
 
-const roleMapping: Record<MessageRole, FriendlyRole> = {
+export const roleMapping: Record<MessageRole, FriendlyRole> = {
   [MessageRole.System]: FriendlyRole.System,
   [MessageRole.User]: FriendlyRole.User,
   [MessageRole.Assistant]: FriendlyRole.Assistant,

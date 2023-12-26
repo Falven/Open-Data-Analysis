@@ -169,6 +169,7 @@ export const streamServerProgress = async (
   const timeout = 60000;
   const controller = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout>;
+  let done = false;
 
   const response = await createRetryableAxiosRequest(
     async (): Promise<AxiosResponse> =>
@@ -179,15 +180,17 @@ export const streamServerProgress = async (
         signal: options?.signal ?? controller.signal,
         httpAgent: new http.Agent({ keepAlive: true }),
         httpsAgent: new https.Agent({ keepAlive: true }),
-        onDownloadProgress: (_progressEvent: AxiosProgressEvent): void => {
+        onDownloadProgress: (progressEvent: AxiosProgressEvent): void => {
           clearTimeout(timeoutId);
-          timeoutId = setTimeout(() => {
-            if (controller.signal.aborted === false) {
-              console.log(`No message received for ${timeout / 1000} seconds, aborting request.`);
-              clearTimeout(timeoutId);
-              controller.abort();
-            }
-          }, timeout);
+          if (done === false) {
+            timeoutId = setTimeout(() => {
+              if (controller.signal.aborted === false) {
+                console.log(`No message received for ${timeout / 1000} seconds, aborting request.`);
+                controller.abort();
+                clearTimeout(timeoutId);
+              }
+            }, timeout);
+          }
         },
       }),
     options,
@@ -196,6 +199,7 @@ export const streamServerProgress = async (
   const responseStream = response.data as Readable;
 
   const flush = (transform: Transform): void => {
+    done = true;
     clearTimeout(timeoutId);
     transform.push(null);
     responseStream.destroy();
