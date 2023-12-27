@@ -215,13 +215,12 @@ const sseTransform = (abortController: AbortController, timeoutMs: number = 6000
           if (progressEvent?.failed === true) {
             clearTimeout(timeoutId);
             this.destroy(new Error(progressEvent.message));
-            return;
+            break;
           }
 
           if (progressEvent?.ready === true) {
             clearTimeout(timeoutId);
-            this.end();
-            return;
+            this.end(null);
           }
         }
       } catch (error: unknown) {
