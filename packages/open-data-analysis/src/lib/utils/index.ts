@@ -1,4 +1,4 @@
-export * from './axiosUtils.js';
+export * from './netUtils.js';
 export * from './envUtils.js';
 export * from './jupyterUtils.js';
 export * from './storageTypes.js';

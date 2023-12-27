@@ -1,6 +1,7 @@
-import { Readable, Transform, TransformCallback, default as stream } from 'node:stream';
+import { Readable, Transform, TransformCallback } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { Options } from 'p-retry';
+import { ZodError } from 'zod';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import {
   JupyterHubUser,
@@ -12,8 +13,7 @@ import {
 } from 'open-data-analysis/jupyter/hub';
 import { NotFoundError } from 'open-data-analysis/jupyter/errors';
 
-import { createRetryableFetchRequest } from '../../utils/axiosUtils.js';
-import { ZodError } from 'zod';
+import { fetchWithRetry, mergeInit } from '../../utils/netUtils.js';
 
 const jupyterBaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const jupyterToken = getEnvOrThrow('JUPYTER_TOKEN');
@@ -21,20 +21,27 @@ const jupyterToken = getEnvOrThrow('JUPYTER_TOKEN');
 /**
  * A wrapper around the global fetch to apply base configuration.
  *
- * @param url The URL path to append to the base URL.
- * @param init Additional configuration for the fetch request.
+ * @param relativePath The URL path to append to the base URL.
+ * @param additionalInit Additional configuration for the fetch request.
  * @returns A Promise that resolves to the fetch Response.
  */
-const fetchInstance = async (url: string, init?: RequestInit): Promise<Response> => {
-  const headers = new Headers({
-    'Authorization': `token ${jupyterToken}`,
-    'Content-Type': 'application/json',
-    ...init?.headers,
-  });
+const fetchInstance = async (
+  relativePath: string,
+  additionalInit?: RequestInit,
+): Promise<Response> => {
+  const input = `${jupyterBaseURL}/hub/api${relativePath}`;
 
-  const fullUrl = new URL(url, `${jupyterBaseURL}/hub/api`);
+  const baseInit: RequestInit = {
+    method: 'GET',
+    headers: {
+      'Authorization': `token ${jupyterToken}`,
+      'Content-Type': 'application/json',
+    },
+  };
 
-  return fetch(fullUrl, { headers, ...init });
+  const init = mergeInit(baseInit, additionalInit);
+
+  return await fetch(input, init);
 };
 
 export const progressStartedEvent: ProgressEvent = {
@@ -72,14 +79,13 @@ export const startServerForUser = async (
     return progressFinishedEvent;
   }
 
-  const response = await createRetryableFetchRequest(
+  const response = await fetchWithRetry(
     async (): Promise<Response> =>
       fetchInstance(`/users/${user.name}/server`, {
         method: 'POST',
         body: JSON.stringify({ conversationId }),
       }),
     options,
-    [400],
   );
 
   switch (response.status) {
@@ -100,10 +106,9 @@ export const startServerForUser = async (
  * @returns A Promise that resolves to the user data.
  */
 export const getUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
-  const response = await createRetryableFetchRequest(
+  const response = await fetchWithRetry(
     async (): Promise<Response> => fetchInstance(`/users/${username}`),
     options,
-    [404],
   );
 
   switch (response.status) {
@@ -128,7 +133,7 @@ export const getUser = async (username: string, options?: Options): Promise<Jupy
  * @returns A Promise that resolves to the user data.
  */
 export const createUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
-  const response = await createRetryableFetchRequest(
+  const response = await fetchWithRetry(
     async () =>
       fetchInstance(`/users/${username}`, {
         method: 'POST',
@@ -187,6 +192,9 @@ const sseTransform = (abortController: AbortController, timeoutMs: number = 6000
     objectMode: true,
     transform(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback) {
       try {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+
         buffer += decoder.decode(chunk, { stream: true });
 
         let endIndex: number;
@@ -205,6 +213,7 @@ const sseTransform = (abortController: AbortController, timeoutMs: number = 6000
           this.push(progressEvent);
 
           if (progressEvent?.failed === true) {
+            clearTimeout(timeoutId);
             this.destroy(new Error(progressEvent.message));
             return;
           }
@@ -219,6 +228,7 @@ const sseTransform = (abortController: AbortController, timeoutMs: number = 6000
         if (error instanceof ZodError) {
           this.emit('error', error);
         } else {
+          clearTimeout(timeoutId);
           callback(error instanceof Error ? error : new Error('Unknown error'));
         }
       }
@@ -255,24 +265,31 @@ export const streamServerProgress = async (
 
   const controller = new AbortController();
 
-  const response = await createRetryableFetchRequest(
-    () =>
+  const response = await fetchWithRetry(
+    (): Promise<Response> =>
       fetchInstance(serverUrl, {
         method: 'GET',
         headers: { Accept: 'text/event-stream' },
         signal: controller.signal,
+        keepalive: true,
       }),
     options,
   );
+
+  if (response.status !== 200) {
+    const result = await response.json();
+    throw new Error(`Failed to stream server progress. ${result.message}`);
+  }
 
   if (response.body === null) {
     throw new Error('Response body is null');
   }
 
-  const readable = stream.Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+  const readable = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
 
   const transform = sseTransform(controller);
-  return readable.pipe(transform);
+  const sseStream = readable.pipe(transform);
+  return sseStream as ProgressEventStream;
 };
 
 /**
@@ -302,10 +319,9 @@ export const listUserTokens = async (
 ): Promise<TokenDetails[]> => {
   const { name } = user;
 
-  const response = await createRetryableFetchRequest(
+  const response = await fetchWithRetry(
     async (): Promise<Response> => fetchInstance(`/users/${name}/tokens`),
     options,
-    [401, 404],
   );
 
   switch (response.status) {
@@ -333,7 +349,7 @@ export const createUserToken = async (
 ): Promise<TokenDetails> => {
   const { name } = user;
 
-  const response = await createRetryableFetchRequest(
+  const response = await fetchWithRetry(
     async (): Promise<Response> =>
       fetchInstance(`/users/${name}/tokens`, {
         method: 'POST',
@@ -345,7 +361,6 @@ export const createUserToken = async (
         }),
       }),
     options,
-    [400, 403],
   );
 
   switch (response.status) {
@@ -369,13 +384,12 @@ export const deleteUserToken = async (
 ): Promise<void> => {
   const { name } = user;
 
-  const response = await createRetryableFetchRequest(
+  const response = await fetchWithRetry(
     async (): Promise<Response> =>
       fetchInstance(`/users/${name}/tokens/${tokenId}`, {
         method: 'DELETE',
       }),
     options,
-    [404],
   );
 
   switch (response.status) {
