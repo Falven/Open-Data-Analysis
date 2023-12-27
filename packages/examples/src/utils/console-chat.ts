@@ -43,10 +43,12 @@ export class Conversation {
   id: string;
   messages: Message[];
 
+  public static titleLength = 30;
+
   get title(): string {
     if (this.messages.length > 1) {
-      return this.messages[1].content.length > 9
-        ? this.messages[1].content.substring(0, 10) + '...'
+      return this.messages[1].content.length > Conversation.titleLength - 1
+        ? this.messages[1].content.substring(0, Conversation.titleLength) + '...'
         : this.messages[1].content;
     } else {
       return this.id;
@@ -296,20 +298,26 @@ export class ConsoleChat {
   private async logStreamingResponse(
     response: AsyncIterable<Message>,
   ): Promise<Message | undefined> {
-    let message: Message | undefined = undefined;
+    let message: Message | undefined;
+    let aggContent: string = '';
     let toolsLogged = false;
 
     for await (const chunk of response) {
       message = chunk;
+      const { toolInvocations, content } = message;
 
-      if (message.toolInvocations !== undefined && toolsLogged === false) {
-        this.logToolInvocations(message.toolInvocations);
+      if (toolInvocations !== undefined && toolsLogged === false) {
+        this.logToolInvocations(toolInvocations);
         toolsLogged = true;
       }
 
-      process.stdout.write(message.content);
+      aggContent += content;
+      process.stdout.write(content);
     }
 
+    if (message !== undefined) {
+      message.content = aggContent;
+    }
     return message;
   }
 
@@ -388,28 +396,25 @@ export class ConsoleChat {
 
   private completer: AsyncCompleter = (
     line: string,
-    callback: (err?: Error | null | undefined, result?: CompleterResult | undefined) => void,
+    callback: (err?: Error | null, result?: CompleterResult) => void,
   ): void => {
-    const tokens = line.split(/\s+/);
+    const tokens = line.trim().split(/\s+/);
 
-    if (tokens[0] !== Command.Upload || tokens.length < 1) {
+    if (tokens.length === 1) {
+      const potentialCommand = tokens[0];
+      const suggestions = Object.values(Command).filter((cmd: Command) =>
+        cmd.startsWith(potentialCommand),
+      );
+      const hits = suggestions.map((cmd) => cmd + ' ');
+      callback(null, [hits.length > 0 ? hits : [], line]);
+    } else if (tokens[0] === Command.Upload && tokens.length > 1) {
+      const lastToken = tokens.at(-1) as string;
+      getCompletions(lastToken)
+        .then((hits: string[]) => callback(null, [hits, lastToken]))
+        .catch((err) => callback(err));
+    } else {
       callback(null, [[], line]);
-      return;
     }
-
-    const lastToken = tokens.at(-1);
-    if (lastToken === undefined) {
-      callback(null, [[], line]);
-      return;
-    }
-
-    getCompletions(lastToken)
-      .then((hits: string[]) => {
-        callback(null, [hits, tokens[1]]);
-      })
-      .catch((err) => {
-        callback(err);
-      });
   };
 
   private async promptForMessage(): Promise<Command> {

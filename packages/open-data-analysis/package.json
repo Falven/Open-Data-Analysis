@@ -38,18 +38,17 @@
       "require": "./dist/cjs/utils/index.cjs"
     }
   },
-  "main": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm\" \"pnpm:build:cjs\" \"pnpm:build:tsc\"",
-    "build:cjs": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --lib --cjs",
+    "build:cjs": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ./esbuild.config.ts --lib --cjs",
     "build:dev": "concurrently --names \"ESM,CJS,TSC\" -c \"yellow.bold,white.bold,blue.bold\" \"pnpm:build:esm --dev\" \"pnpm:build:cjs --dev\" \"pnpm:build:tsc\"",
-    "build:esm": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --lib",
+    "build:esm": "pnpm node --no-warnings=ExperimentalWarning --loader ts-node/esm ./esbuild.config.ts --lib",
     "build:tsc": "tsc --emitDeclarationOnly",
-    "test": "pnpm node --inspect --no-warnings=ExperimentalWarning --loader ts-node/esm ../../scripts/esbuild.config.ts --test"
+    "test": "pnpm node --inspect --no-warnings=ExperimentalWarning --loader ts-node/esm ./esbuild.config.ts --test"
   },
   "dependencies": {
     "@azure/core-http": "^3.0.4",

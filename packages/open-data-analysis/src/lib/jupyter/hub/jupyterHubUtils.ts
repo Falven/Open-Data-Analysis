@@ -29,6 +29,8 @@ const instance = axios.create({
     'Authorization': `token ${jupyterToken}`,
     'Content-Type': 'application/json',
   },
+  httpAgent: new http.Agent({ keepAlive: false }),
+  httpsAgent: new https.Agent({ keepAlive: false }),
 });
 
 export const progressStartedEvent: ProgressEvent = {

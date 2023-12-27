@@ -21,7 +21,6 @@ import {
   isDisplayDataMsg,
   isStreamMsg,
   isErrorMsg,
-  isStatusMsg,
 } from '@jupyterlab/services/lib/kernel/messages.js';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
@@ -107,22 +106,28 @@ const createDirectoryStructureWithinJupyter = async (
  * @param {Contents.IModel['path']} path The path of the notebook.
  * @returns {Contents.IModel} The notebook model.
  */
-const getNewNotebookModel = (name: string, path: string): Contents.IModel => ({
-  name,
-  path,
-  content: {
+const getNewNotebookModel = (name: string, path: string): Contents.IModel => {
+  const content: INotebookContent = {
     metadata: {},
-    nbformat_minor: 5,
+    nbformat_minor: 4,
     nbformat: 4,
     cells: [],
-  } as INotebookContent,
-  writable: true,
-  created: new Date().toISOString(),
-  last_modified: new Date().toISOString(),
-  mimetype: 'null',
-  format: null,
-  type: 'notebook',
-});
+  };
+
+  const notebook: Contents.IModel = {
+    name,
+    path,
+    content,
+    writable: true,
+    created: new Date().toISOString(),
+    last_modified: new Date().toISOString(),
+    mimetype: 'null',
+    format: null,
+    type: 'notebook',
+  };
+
+  return notebook;
+};
 
 /**
  * Gets an existing notebook or creates a new notebook.
@@ -205,22 +210,21 @@ const processMessage = async (
   outputs: IOutput[],
   onDisplayData?: DisplayCallback,
 ): Promise<[string, string, ExecutionCount]> => {
-  if (!isStatusMsg(msg)) {
-    outputs.push({ output_type: msg.header.msg_type, ...msg.content });
-  }
-
   let stdout = '';
   let stderr = '';
   let execution_count: ExecutionCount = null;
+
   if (isExecuteResultMsg(msg)) {
     const textData = msg.content.data['text/plain'];
     stdout += parseMessageDataToText(textData);
     execution_count = msg.content.execution_count;
+    outputs.push({ output_type: 'execute_result', ...msg.content });
   } else if (isDisplayDataMsg(msg)) {
     if (onDisplayData !== undefined) {
       const imageData = msg.content.data['image/png'];
       const base64ImageData = parseMessageDataToText(imageData);
       stdout += onDisplayData(base64ImageData);
+      outputs.push({ output_type: 'display_data', ...msg.content });
     }
   } else if (isStreamMsg(msg)) {
     if (msg.content.name === 'stdout') {
@@ -228,8 +232,10 @@ const processMessage = async (
     } else {
       stderr += msg.content.text;
     }
+    outputs.push({ output_type: 'stream', ...msg.content });
   } else if (isErrorMsg(msg)) {
     stderr += msg.content.traceback.join('\n');
+    outputs.push({ output_type: 'error', ...msg.content });
   }
 
   return [stdout, stderr, execution_count];

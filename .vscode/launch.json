@@ -24,6 +24,17 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "Debug ESBuild",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/packages/open-data-analysis",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "open-data-analysis", "build"],
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node",
+      "outputCapture": "std",
+      "console": "integratedTerminal"
+    },
+    {
       "name": "Debug Tests",
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/open-data-analysis",

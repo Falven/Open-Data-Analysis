@@ -76,7 +76,8 @@ chat.onUserSettingsChange = (
       type: 'function',
       function: {
         function: async (args: CodeInterpreterFunction): Promise<string> => {
-          const invocation = toToolInvocation(name, args, await _call.bind(interpreter)(args));
+          const result = await _call.bind(interpreter)(args);
+          const invocation = toToolInvocation(name, args, result);
           currentToolInvocations.push(invocation);
           return invocation.output;
         },
@@ -104,11 +105,11 @@ chat.generateAssistantResponse = async function* generateAssistantResponse(
   });
 
   let messageChunk: Message | undefined;
-
+  // Finish reason 'tool_calls'
   for await (const chunk of stream) {
-    const token = chunk.choices[0]?.delta?.content ?? '';
+    const token = chunk.choices[0]?.delta?.content;
 
-    if (token === '') {
+    if (!token) {
       continue;
     }
 

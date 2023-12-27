@@ -9,10 +9,18 @@ export const toToolInvocation = (
   result: string,
 ): ToolInvocation => {
   const input = highlight(args.code, { language: 'python' });
-  const { stdout, stderr } = JSON.parse(result);
-  let output = stdout;
-  if (stderr) {
-    output += '\n' + stderr;
+  let output: string;
+
+  try {
+    const { stdout, stderr } = JSON.parse(result);
+    output = stdout;
+    if (stderr) {
+      output += '\n' + stderr;
+    }
+  } catch (error) {
+    // Case where the interpreter returns a string instead of JSON.
+    output = result;
   }
+
   return { name, input, output };
 };
