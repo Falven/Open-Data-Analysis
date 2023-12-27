@@ -64,7 +64,7 @@ importers:
         version: 2.1.11
       langchain:
         specifier: ^0.0.203
-        version: 0.0.203(@azure/storage-blob@12.17.0)(axios@1.6.2)
+        version: 0.0.203(@azure/storage-blob@12.17.0)
       open-data-analysis:
         specifier: workspace:*
         version: link:../open-data-analysis
@@ -120,12 +120,9 @@ importers:
       '@jupyterlab/services':
         specifier: ^7.0.9
         version: 7.0.9(react@18.2.0)
-      axios:
-        specifier: ^1.6.2
-        version: 1.6.2
       langchain:
         specifier: ^0.0.203
-        version: 0.0.203(@azure/storage-blob@12.17.0)(axios@1.6.2)
+        version: 0.0.203(@azure/storage-blob@12.17.0)
       p-retry:
         specifier: ^6.1.0
         version: 6.1.0
@@ -1143,16 +1140,6 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /axios@1.6.2:
-    resolution: {integrity: sha512-7i24Ri4pmDRfJTR7LDBhsOTtcm+9kjX5WiY1X3wIisx6G9So3pfMkEiU7emUBe46oceVImccTEM3k6C5dbVW8A==}
-    dependencies:
-      follow-redirects: 1.15.3
-      form-data: 4.0.0
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-    dev: false
-
   /balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
     dev: true
@@ -1955,16 +1942,6 @@ packages:
     resolution: {integrity: sha512-36yxDn5H7OFZQla0/jFJmbIKTdZAQHngCedGxiMmpNfEZM0sdEeT+WczLQrjK6D7o2aiyLYDnkw0R3JK0Qv1RQ==}
     dev: true
 
-  /follow-redirects@1.15.3:
-    resolution: {integrity: sha512-1VzOtuEM8pC9SFU1E+8KfTjZyMztRsgEfwQl44z8A25uy13jSzTj6dyK2Df52iV0vgHCfBwLhDWevLn95w5v6Q==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dev: false
-
   /for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
     dependencies:
@@ -2490,7 +2467,7 @@ packages:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
     engines: {node: '>=6'}
 
-  /langchain@0.0.203(@azure/storage-blob@12.17.0)(axios@1.6.2):
+  /langchain@0.0.203(@azure/storage-blob@12.17.0):
     resolution: {integrity: sha512-H41ik99zXVuqe6CqYoySE4p8TpeqB41KTSkHDf5xNBDG7Hvh1Oq1JyWKs4PaxkO04MagXdN21gIGz+E5djsEXA==}
     engines: {node: '>=18'}
     peerDependencies:
@@ -2802,7 +2779,6 @@ packages:
       '@anthropic-ai/sdk': 0.9.1
       '@azure/storage-blob': 12.17.0
       '@langchain/core': 0.0.10
-      axios: 1.6.2
       binary-extensions: 2.2.0
       expr-eval: 2.0.2
       flat: 5.0.2
@@ -3296,10 +3272,6 @@ packages:
     dependencies:
       kleur: 3.0.3
       sisteransi: 1.0.5
-    dev: false
-
-  /proxy-from-env@1.1.0:
-    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
     dev: false
 
   /punycode@2.3.1:

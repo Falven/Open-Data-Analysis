@@ -12,6 +12,11 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs"
     },
+    "./jupyter/errors": {
+      "types": "./dist/types/jupyter/errors/index.d.ts",
+      "import": "./dist/esm/jupyter/errors/index.js",
+      "require": "./dist/cjs/jupyter/errors/index.cjs"
+    },
     "./jupyter/hub": {
       "types": "./dist/types/jupyter/hub/index.d.ts",
       "import": "./dist/esm/jupyter/hub/index.js",
@@ -55,7 +60,6 @@
     "@azure/storage-blob": "^12.17.0",
     "@jupyterlab/nbformat": "4.1.0-alpha.4",
     "@jupyterlab/services": "^7.0.9",
-    "axios": "^1.6.2",
     "langchain": "^0.0.203",
     "p-retry": "^6.1.0",
     "zod": "^3.22.4",

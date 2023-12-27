@@ -1,6 +1,6 @@
 import { posix } from 'node:path';
 import { isPromise } from 'node:util/types';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 import { z } from 'zod';
@@ -22,6 +22,7 @@ import {
   DisplayCallback,
 } from 'open-data-analysis/jupyter/server';
 import {
+  ProgressEvent,
   getOrCreateUser,
   streamServerProgress,
   startServerForUser,

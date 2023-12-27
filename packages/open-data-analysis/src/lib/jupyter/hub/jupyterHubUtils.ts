@@ -1,9 +1,6 @@
-import http from 'node:http';
-import https from 'node:https';
-import { Transform, Readable, TransformCallback } from 'node:stream';
-import axios, { AxiosProgressEvent, AxiosResponse } from 'axios';
+import { Readable, Transform, TransformCallback, default as stream } from 'node:stream';
+import type { ReadableStream } from 'node:stream/web';
 import { Options } from 'p-retry';
-import { ZodError } from 'zod';
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import {
   JupyterHubUser,
@@ -12,26 +9,33 @@ import {
   isTokenDetails,
   isProgressEvent,
   TokenDetails,
-  CreateTokenRequest,
 } from 'open-data-analysis/jupyter/hub';
+import { NotFoundError } from 'open-data-analysis/jupyter/errors';
 
-import { createRetryableAxiosRequest } from '../../utils/axiosUtils.js';
+import { createRetryableFetchRequest } from '../../utils/axiosUtils.js';
+import { ZodError } from 'zod';
 
 const jupyterBaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const jupyterToken = getEnvOrThrow('JUPYTER_TOKEN');
 
 /**
- * Create an axios instance for the JupyterHub API.
+ * A wrapper around the global fetch to apply base configuration.
+ *
+ * @param url The URL path to append to the base URL.
+ * @param init Additional configuration for the fetch request.
+ * @returns A Promise that resolves to the fetch Response.
  */
-const instance = axios.create({
-  baseURL: `${jupyterBaseURL}/hub/api`,
-  headers: {
+const fetchInstance = async (url: string, init?: RequestInit): Promise<Response> => {
+  const headers = new Headers({
     'Authorization': `token ${jupyterToken}`,
     'Content-Type': 'application/json',
-  },
-  httpAgent: new http.Agent({ keepAlive: false }),
-  httpsAgent: new https.Agent({ keepAlive: false }),
-});
+    ...init?.headers,
+  });
+
+  const fullUrl = new URL(url, `${jupyterBaseURL}/hub/api`);
+
+  return fetch(fullUrl, { headers, ...init });
+};
 
 export const progressStartedEvent: ProgressEvent = {
   progress: 0,
@@ -63,32 +67,30 @@ export const startServerForUser = async (
   conversationId: string,
   options?: Options,
 ): Promise<ProgressEvent> => {
-  try {
-    const firstServer = Object.values(user.servers)[0];
-    if (firstServer !== undefined && firstServer.ready) {
+  const firstServer = Object.values(user.servers)[0];
+  if (firstServer !== undefined && firstServer.ready) {
+    return progressFinishedEvent;
+  }
+
+  const response = await createRetryableFetchRequest(
+    async (): Promise<Response> =>
+      fetchInstance(`/users/${user.name}/server`, {
+        method: 'POST',
+        body: JSON.stringify({ conversationId }),
+      }),
+    options,
+    [400],
+  );
+
+  switch (response.status) {
+    case 201:
       return progressFinishedEvent;
-    }
-
-    const response = await createRetryableAxiosRequest(
-      async (): Promise<AxiosResponse> =>
-        await instance.post(`/users/${user.name}/server`, { conversationId }),
-      options,
-      [400],
-    );
-
-    switch (response.status) {
-      case 201:
-        return progressFinishedEvent;
-      case 202:
-        return progressStartedEvent;
-      default:
-        throw new Error(`Unexpected response status ${response.status}`);
-    }
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 400) {
+    case 202:
+      return progressStartedEvent;
+    case 400:
       return progressFailedEvent;
-    }
-    throw error;
+    default:
+      throw new Error(`Unexpected response status ${response.status}`);
   }
 };
 
@@ -98,15 +100,22 @@ export const startServerForUser = async (
  * @returns A Promise that resolves to the user data.
  */
 export const getUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
-  const { data, status } = await createRetryableAxiosRequest<JupyterHubUser>(
-    async (): Promise<AxiosResponse> => await instance.get<JupyterHubUser>(`/users/${username}`),
+  const response = await createRetryableFetchRequest(
+    async (): Promise<Response> => fetchInstance(`/users/${username}`),
     options,
     [404],
   );
 
-  if (status !== 200) {
-    throw new Error(`Failed to get user ${username}.`);
+  switch (response.status) {
+    case 200:
+      break;
+    case 404:
+      throw new NotFoundError(`User ${username} not found.`);
+    default:
+      throw new Error(`Failed to get user ${username}.`);
   }
+
+  const data: JupyterHubUser = await response.json();
 
   isJupyterHubUser(data);
 
@@ -119,19 +128,104 @@ export const getUser = async (username: string, options?: Options): Promise<Jupy
  * @returns A Promise that resolves to the user data.
  */
 export const createUser = async (username: string, options?: Options): Promise<JupyterHubUser> => {
-  const { data, status } = await createRetryableAxiosRequest<JupyterHubUser>(
-    async (): Promise<AxiosResponse> =>
-      await instance.post<JupyterHubUser>(`/users/${username}`, {}),
+  const response = await createRetryableFetchRequest(
+    async () =>
+      fetchInstance(`/users/${username}`, {
+        method: 'POST',
+      }),
     options,
   );
 
-  if (status !== 201) {
-    throw new Error(`Failed to create user ${username}.`);
+  switch (response.status) {
+    case 201:
+      break;
+    default:
+      throw new Error(`Failed to create user ${username}.`);
   }
+
+  const data: JupyterHubUser = await response.json();
 
   isJupyterHubUser(data);
 
   return data;
+};
+
+/**
+ * Get the server URL for a JupyterHub user.
+ *
+ * This function takes a JupyterHubUser object and returns the URL of the user's server's progress endpoint.
+ * If the user has multiple servers, it returns the progress URL of the first server found.
+ * If no server is found, it returns a default progress URL.
+ *
+ * @param user A JupyterHubUser object.
+ * @returns The server's progress URL.
+ */
+const getUserServerUrl = (user: JupyterHubUser): string => {
+  const serverKeys = Object.keys(user.servers);
+  return serverKeys.length > 0
+    ? user.servers[serverKeys[0]].progress_url
+    : `/users/${user.name}/server/progress`;
+};
+
+/**
+ * Create a Transform for processing Server-Sent Events (SSE).
+ *
+ * This function creates a Transform that processes incoming data chunks as Server-Sent Events (SSE).
+ * It decodes the chunks and emits ProgressEvent objects.
+ * It also handles timeouts and errors gracefully.
+ *
+ * @param abortController An AbortController to allow aborting the stream.
+ * @param timeoutMs Optional timeout in milliseconds (default is 60000ms or 60 seconds).
+ * @returns A Transform that processes SSE data and emits ProgressEvent objects.
+ */
+const sseTransform = (abortController: AbortController, timeoutMs: number = 60000): Transform => {
+  let buffer: string = '';
+  let timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+  const decoder = new TextDecoder();
+
+  return new Transform({
+    objectMode: true,
+    transform(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback) {
+      try {
+        buffer += decoder.decode(chunk, { stream: true });
+
+        let endIndex: number;
+        while ((endIndex = buffer.indexOf('\n\n')) !== -1) {
+          const sse = buffer.substring(0, endIndex);
+          buffer = buffer.substring(endIndex + 2);
+
+          if (!sse.startsWith('data:')) {
+            continue;
+          }
+
+          const progressEvent: ProgressEvent = JSON.parse(sse.substring(5));
+
+          isProgressEvent(progressEvent);
+
+          this.push(progressEvent);
+
+          if (progressEvent?.failed === true) {
+            this.destroy(new Error(progressEvent.message));
+            return;
+          }
+
+          if (progressEvent?.ready === true) {
+            clearTimeout(timeoutId);
+            this.end();
+            return;
+          }
+        }
+      } catch (error: unknown) {
+        if (error instanceof ZodError) {
+          this.emit('error', error);
+        } else {
+          callback(error instanceof Error ? error : new Error('Unknown error'));
+        }
+      }
+
+      callback();
+    },
+  });
 };
 
 /**
@@ -143,115 +237,42 @@ export type ProgressEventStream = Readable & {
 };
 
 /**
- * Retrieves server startup progress for a user from JupyterHub as a stream of events.
+ * Stream server startup progress events from JupyterHub.
  *
  * This function connects to the JupyterHub API and returns a stream that emits server startup progress events.
- * Each event in the stream is an object representing a progress update. The function handles SSE (Server-Sent Events)
- * and includes a 20-second timeout mechanism. If no event is received within this period, the stream is automatically aborted.
- *
- * The function is designed to handle and emit validation errors (using Zod) without terminating the stream.
- * For other types of errors, the stream will be terminated and the errors will be emitted.
- *
- * Usage note: Consumers of this function should handle error events emitted by the stream.
+ * It handles Server-Sent Events (SSE) and includes a timeout mechanism.
+ * Errors are handled gracefully, and validation errors are emitted without terminating the stream.
  *
  * @param user A username (string) or JupyterHubUser object to track server progress for.
  * @param options Optional configuration options for the request.
- *
- * @returns A Promise resolving to a ProgressEventStream that emits progress updates.
+ * @returns A Promise resolving to a ReadableStream of ProgressEvent objects.
  */
 export const streamServerProgress = async (
   user: JupyterHubUser,
   options?: Options,
 ): Promise<ProgressEventStream> => {
-  const { name, servers } = user;
-  const serverKeys = Object.keys(servers);
-  const serverUrl =
-    serverKeys.length > 0 ? servers[serverKeys[0]].progress_url : `/users/${name}/server/progress`;
+  const serverUrl = getUserServerUrl(user);
 
-  const timeout = 60000;
   const controller = new AbortController();
-  let timeoutId: ReturnType<typeof setTimeout>;
-  let done = false;
 
-  const response = await createRetryableAxiosRequest(
-    async (): Promise<AxiosResponse> =>
-      await instance.get(serverUrl, {
+  const response = await createRetryableFetchRequest(
+    () =>
+      fetchInstance(serverUrl, {
+        method: 'GET',
         headers: { Accept: 'text/event-stream' },
-        responseType: 'stream',
-        timeout: 0,
-        signal: options?.signal ?? controller.signal,
-        httpAgent: new http.Agent({ keepAlive: true }),
-        httpsAgent: new https.Agent({ keepAlive: true }),
-        onDownloadProgress: (progressEvent: AxiosProgressEvent): void => {
-          clearTimeout(timeoutId);
-          if (done === false) {
-            timeoutId = setTimeout(() => {
-              if (controller.signal.aborted === false) {
-                console.log(`No message received for ${timeout / 1000} seconds, aborting request.`);
-                controller.abort();
-                clearTimeout(timeoutId);
-              }
-            }, timeout);
-          }
-        },
+        signal: controller.signal,
       }),
     options,
   );
 
-  const responseStream = response.data as Readable;
+  if (response.body === null) {
+    throw new Error('Response body is null');
+  }
 
-  const flush = (transform: Transform): void => {
-    done = true;
-    clearTimeout(timeoutId);
-    transform.push(null);
-    responseStream.destroy();
-  };
+  const readable = stream.Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
 
-  let buffer: string = '';
-  const progressEventTransform = new Transform({
-    objectMode: true,
-    write(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback): void {
-      buffer += chunk.toString('utf8');
-
-      let endIndex: number;
-      while ((endIndex = buffer.indexOf('\n\n')) !== -1) {
-        const sse = buffer.substring(0, endIndex);
-        buffer = buffer.substring(endIndex + 2);
-
-        try {
-          if (!sse.startsWith('data:')) {
-            continue;
-          }
-
-          const progressEvent: ProgressEvent = JSON.parse(sse.substring(5));
-          isProgressEvent(progressEvent);
-          this.push(progressEvent);
-
-          if (progressEvent?.failed === true) {
-            throw new Error(progressEvent.message);
-          }
-
-          if (progressEvent?.ready === true) {
-            flush(this);
-            break;
-          }
-        } catch (error: unknown) {
-          if (error instanceof ZodError) {
-            this.emit('error', error);
-          } else {
-            flush(this);
-            throw error;
-          }
-        }
-      }
-
-      callback();
-    },
-  });
-
-  responseStream.pipe(progressEventTransform);
-
-  return progressEventTransform as ProgressEventStream;
+  const transform = sseTransform(controller);
+  return readable.pipe(transform);
 };
 
 /**
@@ -263,7 +284,7 @@ export const getOrCreateUser = async (username: string): Promise<JupyterHubUser>
   try {
     return await getUser(username);
   } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
+    if (error instanceof NotFoundError) {
       return await createUser(username);
     }
     throw error;
@@ -281,20 +302,22 @@ export const listUserTokens = async (
 ): Promise<TokenDetails[]> => {
   const { name } = user;
 
-  const { data, status } = await createRetryableAxiosRequest<TokenDetails[], string>(
-    async (): Promise<AxiosResponse> => await instance.get<TokenDetails[]>(`/users/${name}/tokens`),
+  const response = await createRetryableFetchRequest(
+    async (): Promise<Response> => fetchInstance(`/users/${name}/tokens`),
     options,
     [401, 404],
   );
 
-  data.every(isTokenDetails);
-
-  switch (status) {
+  switch (response.status) {
     case 200:
       break;
     default:
       throw new Error(`Failed to get tokens for user ${name}.`);
   }
+
+  const data: TokenDetails[] = await response.json();
+
+  data.every(isTokenDetails);
 
   return data;
 };
@@ -310,29 +333,31 @@ export const createUserToken = async (
 ): Promise<TokenDetails> => {
   const { name } = user;
 
-  const { data, status } = await createRetryableAxiosRequest<TokenDetails>(
-    async (): Promise<AxiosResponse> =>
-      await instance.post<TokenDetails, AxiosResponse<TokenDetails>, CreateTokenRequest>(
-        `/users/${name}/tokens`,
-        {
+  const response = await createRetryableFetchRequest(
+    async (): Promise<Response> =>
+      fetchInstance(`/users/${name}/tokens`, {
+        method: 'POST',
+        body: JSON.stringify({
           expires_in: 3600, // 3600s or 1 hour
           note: 'Generated by Code Interpreter',
           roles: ['user'],
           scopes: ['self'],
-        },
-      ),
+        }),
+      }),
     options,
     [400, 403],
   );
 
-  isTokenDetails(data);
-
-  switch (status) {
+  switch (response.status) {
     case 201:
       break;
     default:
       throw new Error(`Failed to create token for user ${name}.`);
   }
+
+  const data: TokenDetails = await response.json();
+
+  isTokenDetails(data);
 
   return data;
 };
@@ -344,13 +369,16 @@ export const deleteUserToken = async (
 ): Promise<void> => {
   const { name } = user;
 
-  const { status } = await createRetryableAxiosRequest(
-    async (): Promise<AxiosResponse> => await instance.delete(`/users/${name}/tokens/${tokenId}`),
+  const response = await createRetryableFetchRequest(
+    async (): Promise<Response> =>
+      fetchInstance(`/users/${name}/tokens/${tokenId}`, {
+        method: 'DELETE',
+      }),
     options,
     [404],
   );
 
-  switch (status) {
+  switch (response.status) {
     case 204:
       break;
     default:
