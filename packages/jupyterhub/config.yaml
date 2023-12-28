@@ -60,3 +60,5 @@ singleuser:
   image:
     name: <my-acr-name>.azurecr.io/singleuser
     tag: latest
+  uid: 1000 # This sets the User ID for the pod to 1000, which corresponds to the jovyan user. It ensures that processes inside the container run as jovyan.
+  fsGid: 100 # The filesystem group ID to use for the POD (users/100). This determines the group ownership of mounted volumes, ensuring that files and directories within these volumes are accessible by members of the users group.

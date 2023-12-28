@@ -184,6 +184,29 @@ az aks get-credentials \
 
 # Check if our cluster is fully functional
 kubectl get node
+
+# Next, we need to make a change to the blob driver to enable fsGroupPolicy.
+# https://github.com/kubernetes-sigs/blob-csi-driver/blob/ce26f284065e1f9d68f3e3ca4046515aa17e8d3f/deploy/example/fsgroup/README.md
+# Backup Blob driver
+kubectl get csidriver blob.csi.azure.com -o yaml > blob.csi.azure.com_backup.yaml
+# Delete Blob driver
+kubectl delete CSIDriver blob.csi.azure.com
+# Recreate Driver with fsGroupPolicy.
+cat <<EOF | kubectl create -f -
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: blob.csi.azure.com
+spec:
+  attachRequired: false
+  podInfoOnMount: true
+  fsGroupPolicy: File
+  volumeLifecycleModes:
+    - Persistent
+    - Ephemeral
+EOF
+# Validate changes.
+kubectl get csidriver blob.csi.azure.com -o yaml
 ```
 
 ## 5.3 Deploying JupyterHub
