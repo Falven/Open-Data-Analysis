@@ -1,6 +1,6 @@
-import { posix } from 'node:path';
+import { join } from 'node:path/posix';
 import { isPromise } from 'node:util/types';
-import { Readable, Transform } from 'node:stream';
+import { Readable } from 'node:stream';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 import { z } from 'zod';
@@ -12,7 +12,6 @@ import {
   SessionManager,
 } from '@jupyterlab/services';
 import {
-  addCellsToNotebook,
   executeCode,
   getOrCreatePythonSession,
   getOrCreateNotebook,
@@ -20,9 +19,9 @@ import {
   createServerSettingsForUser,
   ServerStartupCallback,
   DisplayCallback,
+  addCellsToNotebook,
 } from 'open-data-analysis/jupyter/server';
 import {
-  ProgressEvent,
   getOrCreateUser,
   streamServerProgress,
   startServerForUser,
@@ -161,7 +160,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     this.sasExpirationMins = sasExpirationMins;
     this.sandboxDirectory = this.useHub ? '' : this.userId;
     this.notebookName = `${this.conversationId}.ipynb`;
-    this.notebookPath = posix.join(this.sandboxDirectory, this.notebookName);
+    this.notebookPath = join(this.sandboxDirectory, this.notebookName);
   }
 
   /**
@@ -243,7 +242,8 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
       if (notebookModel !== undefined && contentsManager !== undefined) {
         // Add the code and result to the notebook.
         addCellsToNotebook(notebookModel, code, outputs, executionCount);
-
+        // Validate the notebook.
+        Contents.validateContentsModel(notebookModel);
         // Save the notebook.
         await contentsManager.save(this.notebookPath, notebookModel);
       }

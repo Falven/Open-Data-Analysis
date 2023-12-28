@@ -1,4 +1,4 @@
-import { posix } from 'node:path';
+import { join, sep } from 'node:path/posix';
 import { randomUUID } from 'node:crypto';
 import {
   ServerConnection,
@@ -25,6 +25,7 @@ import {
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JupyterHubUser } from '../hub/jupyterHubSchemas.js';
+import { basename } from 'node:path';
 
 const jupyterBaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const jupyterWsURL = getEnvOrThrow('JUPYTER_WS_URL');
@@ -63,39 +64,33 @@ export const createServerSettingsForUser = (
  * Creates a directory structure based on a given relative path within the Jupyter Server.
  * The path is relative to the user's home directory in the Jupyter Server.
  * @param contentsManager The contents manager used to create the directory structure.
- * @param jupyterRelativePath The relative path of directories to create, within the Jupyter Server.
+ * @param path The relative path of directories to create, within the Jupyter Server.
  */
-const createDirectoryStructureWithinJupyter = async (
+const createDirectoryStructure = async (
   contentsManager: ContentsManager,
-  jupyterRelativePath: string,
+  path: string,
 ): Promise<void> => {
-  // Normalize the path to resolve '.' and '..' using POSIX standards
-  const normalizedPath = posix.normalize(jupyterRelativePath);
+  const shouldIncludeLastPath = basename(path) === '';
+  const targetPaths = shouldIncludeLastPath ? path.split(sep) : path.split(sep).slice(0, -1);
 
-  // Split the path into directories, filtering out null, undefined, and empty strings
-  const directories = normalizedPath
-    .split(posix.sep)
-    .filter((dir) => dir != null && dir !== '' && dir !== '.' && dir !== '..');
+  let currentPath = '';
+  for (const targetPath of targetPaths) {
+    const ls = (await contentsManager.get(currentPath)).content as Contents.IModel[];
+    const directoryExists = ls.find(
+      (content: Contents.IModel) => content.name === targetPath && content.type === 'directory',
+    );
 
-  // Start from the root directory (interpreted as user's home directory in Jupyter Server)
-  let currentPath: string = '';
-
-  for (const directory of directories) {
-    // Construct the path for the current directory
-    currentPath = posix.join(currentPath, directory);
-
-    // Check if the directory exists
-    const model = await contentsManager.get(currentPath);
-    if (
-      !(model.content as Contents.IModel[]).find(
-        (content: Contents.IModel) => content.name === directory && content.type === 'directory',
-      )
-    ) {
-      // Directory does not exist, create an 'Untitled' directory first
-      const newDir = await contentsManager.newUntitled({ path: currentPath, type: 'directory' });
-
-      // Then rename the 'Untitled' directory to the desired name
-      await contentsManager.rename(newDir.path, currentPath);
+    if (directoryExists) {
+      currentPath = join(currentPath, targetPath);
+    } else {
+      let newPath = await contentsManager.newUntitled({ path: currentPath, type: 'directory' });
+      try {
+        currentPath = join(currentPath, targetPath);
+        newPath = await contentsManager.rename(newPath.path, currentPath);
+      } catch (error: unknown) {
+        await contentsManager.delete(newPath.path);
+        throw error;
+      }
     }
   }
 };
@@ -106,10 +101,10 @@ const createDirectoryStructureWithinJupyter = async (
  * @param {Contents.IModel['path']} path The path of the notebook.
  * @returns {Contents.IModel} The notebook model.
  */
-const getNewNotebookModel = (name: string, path: string): Contents.IModel => {
+export const getNewNotebookModel = (name: string, path: string): Contents.IModel => {
   const content: INotebookContent = {
     metadata: {},
-    nbformat_minor: 4,
+    nbformat_minor: 5,
     nbformat: 4,
     cells: [],
   };
@@ -132,26 +127,26 @@ const getNewNotebookModel = (name: string, path: string): Contents.IModel => {
 /**
  * Gets an existing notebook or creates a new notebook.
  * @param contentsManager The contents manager used to get or create the notebook.
- * @param notebookPath The path of the notebook.
+ * @param path The path of the notebook.
  * @returns {Promise<Contents.IModel>} The notebook model.
  */
 export const getOrCreateNotebook = async (
   contentsManager: ContentsManager,
-  notebookPath: string,
+  path: string,
 ): Promise<Contents.IModel> => {
-  const dirname = posix.dirname(notebookPath);
-  await createDirectoryStructureWithinJupyter(contentsManager, dirname);
-
-  let model: Contents.IModel;
-  const name = posix.basename(notebookPath);
-  const contents = await contentsManager.get(dirname);
-  const content: Contents.IModel[] = contents.content;
-  if (content.find((content) => content.name === name && content.type === 'notebook')) {
-    model = await contentsManager.get(notebookPath);
-  } else {
-    model = getNewNotebookModel(name, notebookPath);
+  const notebookName = basename(path);
+  if (notebookName === '') {
+    throw new Error('Notebook name in path cannot be empty.');
   }
-  return model;
+
+  await createDirectoryStructure(contentsManager, path);
+
+  const basePath = path.replace(notebookName, '');
+  const ls = (await contentsManager.get(basePath)).content as Contents.IModel[];
+  const notebookExists = ls.find(
+    (content: Contents.IModel) => content.name === notebookName && content.type === 'notebook',
+  );
+  return notebookExists ? await contentsManager.get(path) : getNewNotebookModel(notebookName, path);
 };
 
 /**
