@@ -13,7 +13,6 @@ hub:
   image:
     name: <my-acr-name>.azurecr.io/k8s-hub
     tag: 3.2.1
-    pullPolicy: Always
   extraConfig:
     # Custom spawner to dynamically set storage paths based on userId and conversationId.
     customSpawner: |
@@ -59,6 +58,5 @@ imagePullSecrets:
   - name: azure-container-registry
 singleuser:
   image:
-    pullPolicy: Always
     name: <my-acr-name>.azurecr.io/singleuser
     tag: latest
