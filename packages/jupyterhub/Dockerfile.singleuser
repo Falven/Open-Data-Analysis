@@ -3,10 +3,3 @@ FROM quay.io/jupyter/base-notebook:latest
 # Install packages to use for Code Interpretation
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt && rm requirements.txt
-
-# Give all users read/write/execute access to the volume.
-USER root
-RUN mkdir -p /mnt/data && \
-  chown jovyan:1000 /mnt/data && \
-  chmod -R 777 /mnt/data
-USER jovyan

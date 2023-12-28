@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jupyter-azure-blob-nfs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi # How much storage to request from the volume per user.
+  volumeName: azure-blob-nfs-pv
+  storageClassName: jupyter-azure-blob-nfs-sc

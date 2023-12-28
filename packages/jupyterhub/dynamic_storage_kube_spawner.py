@@ -9,8 +9,8 @@ class DynamicStorageKubeSpawner(KubeSpawner):
         # Append the Azure Blob volume to the existing volumes
         self.volumes.append(
             {
-                "name": "azure-blob-volume",  # Unique name for the Azure Blob volume
-                "persistentVolumeClaim": {"claimName": "azure-blob-nfs-pvc"},
+                "name": "jupyter-azure-blob-volume",  # Unique name for the Azure Blob volume
+                "persistentVolumeClaim": {"claimName": "jupyter-azure-blob-nfs-pvc"},
             }
         )
 
@@ -18,7 +18,7 @@ class DynamicStorageKubeSpawner(KubeSpawner):
         self.volume_mounts.append(
             {
                 "mountPath": "/mnt/data",  # Mount path for the Azure Blob volume
-                "name": "azure-blob-volume",  # Must match the name in the volumes list
+                "name": "jupyter-azure-blob-volume",  # Must match the name in the volumes list
                 "subPath": f"{userId}/conversations/{conversationId}",
             }
         )
