@@ -1,4 +1,4 @@
-import { join, sep } from 'node:path/posix';
+import { join, sep, basename } from 'node:path/posix';
 import { randomUUID } from 'node:crypto';
 import {
   ServerConnection,
@@ -25,7 +25,6 @@ import {
 import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { DisplayCallback } from 'open-data-analysis/jupyter/server';
 import { JupyterHubUser } from '../hub/jupyterHubSchemas.js';
-import { basename } from 'node:path';
 
 const jupyterBaseURL = getEnvOrThrow('JUPYTER_BASE_URL');
 const jupyterWsURL = getEnvOrThrow('JUPYTER_WS_URL');
