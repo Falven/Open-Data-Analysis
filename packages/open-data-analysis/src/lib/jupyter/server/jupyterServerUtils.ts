@@ -1,4 +1,4 @@
-import { join, sep, basename } from 'node:path/posix';
+import { join, sep } from 'node:path/posix';
 import { randomUUID } from 'node:crypto';
 import {
   ServerConnection,
@@ -59,6 +59,15 @@ export const createServerSettingsForUser = (
   });
 };
 
+const directoryExists = async (
+  contentsManager: ContentsManager,
+  currentPath: string,
+  targetPath: string,
+): Promise<boolean> =>
+  ((await contentsManager.get(currentPath)).content as Contents.IModel[]).some(
+    (content: Contents.IModel) => content.name === targetPath && content.type === 'directory',
+  );
+
 /**
  * Creates a directory structure based on a given relative path within the Jupyter Server.
  * The path is relative to the user's home directory in the Jupyter Server.
@@ -69,17 +78,12 @@ const createDirectoryStructure = async (
   contentsManager: ContentsManager,
   path: string,
 ): Promise<void> => {
-  const shouldIncludeLastPath = basename(path) === '';
-  const targetPaths = shouldIncludeLastPath ? path.split(sep) : path.split(sep).slice(0, -1);
-
   let currentPath = '';
-  for (const targetPath of targetPaths) {
-    const ls = (await contentsManager.get(currentPath)).content as Contents.IModel[];
-    const directoryExists = ls.find(
-      (content: Contents.IModel) => content.name === targetPath && content.type === 'directory',
-    );
-
-    if (directoryExists) {
+  const targetPaths = path.split(sep);
+  let targetPathsLength = targetPaths.length - 1;
+  for (let i = 0; i < targetPathsLength; i++) {
+    const targetPath = targetPaths[i];
+    if (await directoryExists(contentsManager, currentPath, targetPath)) {
       currentPath = join(currentPath, targetPath);
     } else {
       let newPath = await contentsManager.newUntitled({ path: currentPath, type: 'directory' });
@@ -131,21 +135,22 @@ export const getNewNotebookModel = (name: string, path: string): Contents.IModel
  */
 export const getOrCreateNotebook = async (
   contentsManager: ContentsManager,
+  name: string,
   path: string,
 ): Promise<Contents.IModel> => {
-  const notebookName = basename(path);
-  if (notebookName === '') {
-    throw new Error('Notebook name in path cannot be empty.');
+  let basePath: string;
+  if (!path.endsWith(name)) {
+    basePath = path;
+    path = join(path, name);
+  } else {
+    basePath = path.substring(0, path.length - name.length - 1);
   }
 
   await createDirectoryStructure(contentsManager, path);
 
-  const basePath = path.replace(notebookName, '');
-  const ls = (await contentsManager.get(basePath)).content as Contents.IModel[];
-  const notebookExists = ls.find(
-    (content: Contents.IModel) => content.name === notebookName && content.type === 'notebook',
-  );
-  return notebookExists ? await contentsManager.get(path) : getNewNotebookModel(notebookName, path);
+  return (await directoryExists(contentsManager, basePath, name))
+    ? await contentsManager.get(path)
+    : getNewNotebookModel(name, path);
 };
 
 /**

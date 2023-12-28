@@ -209,7 +209,11 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
         contentsManager = new ContentsManager({ serverSettings });
 
         // Get or Create the notebook if it doesn't exist.
-        notebookModel = await getOrCreateNotebook(contentsManager, this.notebookPath);
+        notebookModel = await getOrCreateNotebook(
+          contentsManager,
+          this.notebookName,
+          this.notebookPath,
+        );
       }
 
       // Get or create a Jupyter python kernel session.
