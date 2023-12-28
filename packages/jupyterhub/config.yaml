@@ -62,10 +62,3 @@ singleuser:
     pullPolicy: Always
     name: <my-acr-name>.azurecr.io/singleuser
     tag: latest
-  initContainers:
-    - name: volume-permissions
-      image: busybox
-      command: ['sh', '-c', 'chmod -R 777 /mnt/data'] # Give all users read/write/execute access to the volume.
-      volumeMounts:
-        - mountPath: /mnt/data
-          name: azure-blob-volume
