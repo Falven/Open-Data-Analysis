@@ -1,14 +1,20 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: jupyter-azure-blob-nfs-pv
+  name: azure-blob-nfs-pv
 spec:
   capacity:
     storage: 1Pi # While the Kubernetes API capacity attribute is mandatory, this value isn't used by the Azure Blob storage CSI driver because you can flexibly write data until you reach your storage account's capacity limit. The value of the capacity attribute is used only for size matching between PersistentVolumes and PersistenVolumeClaims. We recommend using a fictitious high value. The pod sees a mounted volume with a fictitious size of 5 Petabytes.
   accessModes:
     - ReadWriteMany # Allow our many singleuser nodes to read and write to the volume.
   persistentVolumeReclaimPolicy: Retain # Keep the volume after the PVC is deleted.
-  storageClassName: jupyter-azure-blob-nfs-sc # The name of the StorageClass that we created earlier.
+  storageClassName: azure-blob-nfs-sc # The name of the StorageClass that we created earlier.
+  mountOptions:
+    - nconnect=4
+    - dir_mode=0777
+    - file_mode=0777
+    - uid=1000
+    - gid=1000
   csi:
     driver: blob.csi.azure.com
     readOnly: false
