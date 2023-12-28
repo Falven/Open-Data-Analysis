@@ -8,7 +8,7 @@ spec:
   accessModes:
     - ReadWriteMany # Allow our many singleuser nodes to read and write to the volume.
   persistentVolumeReclaimPolicy: Retain # Keep the volume after the PVC is deleted.
-  storageClassName: azure-blob-nfs-premium
+  storageClassName: azure-blob-nfs-sc
   mountOptions:
     - nconnect=4
   csi:

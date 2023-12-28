@@ -9,4 +9,4 @@ spec:
     requests:
       storage: 3Gi # How much storage to request from the volume per user.
   volumeName: azure-blob-nfs-pv
-  storageClassName: azure-blob-nfs-premium
+  storageClassName: azure-blob-nfs-sc

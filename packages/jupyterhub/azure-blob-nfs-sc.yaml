@@ -1,0 +1,15 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azure-blob-nfs-sc
+provisioner: blob.csi.azure.com
+parameters:
+  protocol: nfs
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - nconnect=4
+  - dir_mode=0750
+  - file_mode=0750
+  - uid=1000
+  - gid=100

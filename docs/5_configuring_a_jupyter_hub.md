@@ -269,6 +269,9 @@ If you lose your `config.yaml`, you can use `helm list -A` to see all the helm r
 You can read more about Persistent Volumes in the [Kubernetes Docs](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). First, modify the Persistent Volume file `azure-blob-nfs-pv.yaml` to include your storage account details. Then, you can modify the storage per user in the claim, if needed. Finally, apply the PV and PVC.
 
 ```shell
+# Apply our Storage Class
+kubectl apply -f azure-blob-nfs-sc.yaml
+
 # Apply our Persistent Volume
 kubectl apply -f azure-blob-nfs-pv.yaml
 
