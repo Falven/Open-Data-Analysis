@@ -9,7 +9,3 @@ volumeBindingMode: Immediate
 allowVolumeExpansion: true
 mountOptions:
   - nconnect=4
-  - dir_mode=0750
-  - file_mode=0750
-  - uid=1000
-  - gid=100

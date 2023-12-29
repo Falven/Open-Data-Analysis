@@ -20,4 +20,4 @@ spec:
       storageAccount: <my-storage-account-name> # Change this to the name of the Azure Storage Account.
       containerName: users
       protocol: nfs
-      mountPermisions: '0750'
+      mountPermissions: '2770' # Enforces that new files in the mounted folder inherit the group ID, and grants full read, write, and execute permissions to the owner and group, while denying all access to others.

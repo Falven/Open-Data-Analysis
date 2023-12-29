@@ -207,6 +207,7 @@ spec:
 EOF
 # Validate changes.
 kubectl get csidriver blob.csi.azure.com -o yaml
+# Debugging https://github.com/kubernetes-sigs/blob-csi-driver/blob/ce26f284065e1f9d68f3e3ca4046515aa17e8d3f/docs/csi-debug.md
 ```
 
 ## 5.3 Deploying JupyterHub

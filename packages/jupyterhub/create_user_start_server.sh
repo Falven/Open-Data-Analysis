@@ -34,6 +34,12 @@ duration=$((end_time - start_time))
 echo "Connection was open for $duration seconds."
 
 if [ -n "$CONNECT" ]; then
+  echo "Enumerating mounts..."
+  kubectl exec -it "jupyter-$USERNAME" -- df -h
+
+  echo "Listing identity..."
+  kubectl exec -it "jupyter-$USERNAME" -- id
+
   echo "Connecting to $USERNAME's server..."
   kubectl exec -it "jupyter-$USERNAME" -- /bin/bash
 fi

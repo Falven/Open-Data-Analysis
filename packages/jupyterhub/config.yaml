@@ -60,5 +60,20 @@ singleuser:
   image:
     name: <my-acr-name>.azurecr.io/singleuser
     tag: latest
-  uid: 1000 # This sets the User ID for the pod to 1000, which corresponds to the jovyan user. It ensures that processes inside the container run as jovyan.
-  fsGid: 100 # The filesystem group ID to use for the POD (users/100). This determines the group ownership of mounted volumes, ensuring that files and directories within these volumes are accessible by members of the users group.
+  uid: 1000
+  fsGid: 100
+  # The use of an initContainer here is due to NFS's lack of automatic UID/GID handling.
+  # NFS mounts in K8s don't automatically match the user and group IDs of the container,
+  # often resulting in permission issues. An initContainer running as root can adjust permissions on the NFS mount
+  # to match the expected user IDs, resolving these issues. This approach allows the main container to continue
+  # running as a non-root user, maintaining security best practices by limiting root access to only the initContainer
+  # which performs necessary setup tasks before the main application starts.
+  initContainers:
+    - name: init-nfs
+      image: busybox
+      command: ['sh', '-c', 'chown -R 1000:100 /mnt/data']
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - name: azure-blob-volume
+          mountPath: /mnt/data
