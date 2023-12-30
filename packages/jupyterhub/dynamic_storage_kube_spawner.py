@@ -40,9 +40,14 @@ class DynamicStorageKubeSpawner(KubeSpawner):
         user_id = self.user.name
         conversation_id = self.user_options.get("conversationId", "new")
 
+        self.common_labels.update(
+            {"userId": user_id, "conversationId": conversation_id}
+        )
+
         # Define volume and PVC names
-        volume_name = f"volume-{user_id}-{conversation_id}"
-        pvc_name = f"claim-{user_id}-{conversation_id}"
+        context = f"{user_id}-{conversation_id}"
+        volume_name = f"volume-{context}"
+        pvc_name = f"claim-{user_id}"
         sub_path = f"{user_id}/conversations/{conversation_id}"
         home_mount_path = os.environ.get("HOME", "/home/jovyan")
 
