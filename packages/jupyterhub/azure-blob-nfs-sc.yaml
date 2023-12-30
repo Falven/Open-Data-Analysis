@@ -4,7 +4,11 @@ metadata:
   name: azure-blob-nfs-sc
 provisioner: blob.csi.azure.com
 parameters:
+  resourceGroup: <my-resource-group-name> # Change this to the name of the Azure Resource Group.
+  storageAccount: <my-storage-account-name> # Change this to the name of the Azure Storage Account.
   protocol: nfs
+  containerName: users
+  mountPermissions: '2770' # Enforces that new files in the mounted folder inherit the group ID, and grants full read, write, and execute permissions to the owner and group, while denying all access to others.
 volumeBindingMode: Immediate
 allowVolumeExpansion: true
 mountOptions:

@@ -40,6 +40,9 @@ if [ -n "$CONNECT" ]; then
   echo "Listing identity..."
   kubectl exec -it "jupyter-$USERNAME" -- id
 
+  echo "Listing data mount..."
+  kubectl exec -it "jupyter-$USERNAME" -- ls -al /home/jovyan
+
   echo "Connecting to $USERNAME's server..."
   kubectl exec -it "jupyter-$USERNAME" -- /bin/bash
 fi
