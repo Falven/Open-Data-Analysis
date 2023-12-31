@@ -10,6 +10,7 @@ parameters:
   containerName: users
   mountPermissions: '2770' # Enforces that new files in the mounted folder inherit the group ID, and grants full read, write, and execute permissions to the owner and group, while denying all access to others.
 volumeBindingMode: Immediate
+reclaimPolicy: Retain
 allowVolumeExpansion: true
 mountOptions:
   - nconnect=4

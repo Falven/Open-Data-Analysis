@@ -60,6 +60,9 @@ singleuser:
   image:
     name: <my-acr-name>.azurecr.io/singleuser
     tag: latest
+  memory:
+    limit: 3G
+    guarantee: 2G
   storage:
     capacity: 3Gi
     dynamic:

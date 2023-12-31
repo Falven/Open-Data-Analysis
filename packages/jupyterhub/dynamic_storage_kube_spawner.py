@@ -1,5 +1,16 @@
 import os
+from kubernetes_asyncio.client.models import (
+    V1Pod,
+    V1Volume,
+    V1VolumeMount,
+    V1PersistentVolumeClaimVolumeSource,
+    V1CSIPersistentVolumeSource,
+    V1SecretReference,
+)
+from jupyterhub.utils import exponential_backoff
 from kubespawner import KubeSpawner
+from kubespawner.objects import make_pvc
+from functools import partial
 
 
 class DynamicStorageKubeSpawner(KubeSpawner):
@@ -22,6 +33,26 @@ class DynamicStorageKubeSpawner(KubeSpawner):
         _add_init_container(volume_name, mount_path, sub_path): Add an initContainer for NFS mounts.
     """
 
+    @property
+    def conversation_id(self):
+        return self.user_options.get("conversationId", "default")
+
+    @property
+    def user_id(self):
+        return self.user.name
+
+    @property
+    def context(self):
+        return f"{self.user_id}-{self.conversation_id}"
+
+    @property
+    def context_sub_path(self):
+        return f"{self.user_id}/conversations/{self.conversation_id}"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.modify_pod_hook = configure_pod_for_dynamic_storage
+
     def get_pvc_manifest(self):
         """
         Retrieve the Persistent Volume Claim (PVC) manifest.
@@ -36,36 +67,34 @@ class DynamicStorageKubeSpawner(KubeSpawner):
             pvc_manifest = self.get_pvc_manifest()
         """
 
-        # Extract user-specific details
-        user_id = self.user.name
-        conversation_id = self.user_options.get("conversationId", "new")
-
-        self.common_labels.update(
-            {"userId": user_id, "conversationId": conversation_id}
+        self.extra_annotations.update(
+            {"hub.jupyter.org/conversationId": self.conversation_id}
         )
 
         # Define volume and PVC names
-        context = f"{user_id}-{conversation_id}"
-        volume_name = f"volume-{context}"
-        pvc_name = f"claim-{user_id}"
-        sub_path = f"{user_id}/conversations/{conversation_id}"
         home_mount_path = os.environ.get("HOME", "/home/jovyan")
+        nfs_volume_name = f"nfs-volume-{self.context}"
+        nfs_pvc_name = f"claim-nfs-{self.user_id}"
 
         # Update the PVC name
-        self.pvc_name = pvc_name
+        self.pvc_name = nfs_pvc_name
 
         # Update the volume in the volumes list
-        self._update_volume(volume_name, pvc_name)
+        self._update_nfs_volume(nfs_volume_name, nfs_pvc_name)
 
         # Update the volume mount in the volume mounts list
-        self._update_volume_mount(volume_name, home_mount_path, sub_path)
+        self._update_nfs_volume_mount(
+            nfs_volume_name, home_mount_path, self.context_sub_path
+        )
 
         # Add init container for permission adjustment
-        self._add_init_container(volume_name, home_mount_path, sub_path)
+        self._add_nfs_init_container(
+            nfs_volume_name, home_mount_path, self.context_sub_path
+        )
 
         return super().get_pvc_manifest()
 
-    def _update_volume(self, volume_name, pvc_name):
+    def _update_nfs_volume(self, volume_name, pvc_name):
         """
         Update the volume configuration.
 
@@ -99,7 +128,7 @@ class DynamicStorageKubeSpawner(KubeSpawner):
                 f"No volume found matching {expected_volume_names}. Existing volumes: {existing_volume_names}"
             )
 
-    def _update_volume_mount(self, volume_name, expected_mount_path, sub_path):
+    def _update_nfs_volume_mount(self, volume_name, expected_mount_path, sub_path):
         """
         Update the volume mount configuration.
 
@@ -131,7 +160,7 @@ class DynamicStorageKubeSpawner(KubeSpawner):
                 f"No volume mount found for {expected_mount_path}. Existing mounts: {existing_mount_paths}"
             )
 
-    def _add_init_container(self, volume_name, mount_path, sub_path):
+    def _add_nfs_init_container(self, volume_name, mount_path, sub_path):
         """
         Add an initContainer configuration for NFS mounts in Kubernetes.
 
@@ -215,3 +244,68 @@ class DynamicStorageKubeSpawner(KubeSpawner):
                 ],
             }
         )
+
+
+async def configure_pod_for_dynamic_storage(
+    spawner: "DynamicStorageKubeSpawner", pod: V1Pod
+):
+    fuse_volume_name = f"fuse-volume-{spawner.context}"
+    fuse_pvc_name = f"claim-fuse-{spawner.user_id}"
+    fuse_sc_name = "azure-blob-fuse-sc"
+    fuse_volume_mount_path = "/mnt/data"
+
+    pod.spec.volumes.append(
+        V1Volume(
+            name=fuse_volume_name,
+            persistent_volume_claim=V1PersistentVolumeClaimVolumeSource(
+                claim_name=fuse_pvc_name
+            ),
+        )
+    )
+    pod.spec.containers[0].volume_mounts.append(
+        V1VolumeMount(
+            name=fuse_volume_name,
+            mount_path=fuse_volume_mount_path,
+            sub_path=spawner.context_sub_path,
+        )
+    )
+
+    pvc = make_pvc(
+        name=fuse_pvc_name,
+        storage_class=fuse_sc_name,
+        access_modes=spawner.storage_access_modes,
+        selector=spawner._expand_all(spawner.storage_selector),
+        storage=spawner.storage_capacity,
+        labels=spawner._build_common_labels(
+            spawner._expand_all(spawner.storage_extra_labels)
+        ),
+        annotations=spawner._build_common_annotations(
+            spawner._expand_all(spawner.storage_extra_annotations)
+        ),
+    )
+
+    pvc.spec.csi = V1CSIPersistentVolumeSource(
+        driver="blob.csi.azure.com",
+        volume_handle=f"stgptresearch002_{spawner.user_id}",
+        volume_attributes={"containerName": spawner.user_id},
+        node_stage_secret_ref=V1SecretReference(
+            name="azure-storage-secret", namespace="aks-jupyterhub-dev-eastus-001"
+        ),
+    )
+
+    spawner.log.debug(f"Attempting to create PVC {fuse_pvc_name}")
+    try:
+        await exponential_backoff(
+            partial(
+                spawner._make_create_pvc_request,
+                pvc,
+                spawner.k8s_api_request_timeout,
+            ),
+            f"Could not create PVC {fuse_pvc_name}",
+            timeout=spawner.k8s_api_request_retry_timeout,
+        )
+        spawner.log.info(f"Successfully created PVC {fuse_pvc_name}")
+    except Exception as e:
+        spawner.log.error(f"Failed to create PVC {fuse_pvc_name}: {e}")
+
+    return pod
