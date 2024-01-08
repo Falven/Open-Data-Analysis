@@ -1,0 +1,8 @@
+numpy
+matplotlib
+pandas
+openpyxl
+PyPDF2
+scipy
+seaborn
+faker

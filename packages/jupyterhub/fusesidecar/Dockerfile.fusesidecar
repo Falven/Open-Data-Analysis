@@ -1,0 +1,27 @@
+FROM python:3.11.7-alpine3.19
+
+# Install FUSE
+RUN apk add --no-cache fuse
+
+# Create a directory for the FUSE project
+RUN mkdir -p /opt/chatfuse
+
+# Copy the FUSE project to /opt/chatfuse
+COPY packages/chatfuse /opt/chatfuse
+
+# Install any requirements for the FUSE project
+RUN pip install --no-cache-dir -r /opt/chatfuse/requirements.txt
+
+# Set the necessary root fs permissions for the FUSE project
+RUN chown -R root:root /opt/chatfuse && \
+  chmod -R 700 /opt/chatfuse
+
+# Copy the entrypoint script
+COPY packages/jupyterhub/fusesidecar/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Command to run on container start
+CMD ["/opt/chatfuse/main.py"]

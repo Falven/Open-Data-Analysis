@@ -13,15 +13,15 @@ CONNECT=$5
 
 echo "Creating user: $USERNAME"
 curl -X POST $DOMAIN/hub/api/users/$USERNAME \
-     -H "Authorization: token $TOKEN" \
-     -H "Content-Type: application/json"
+  -H "Authorization: token $TOKEN" \
+  -H "Content-Type: application/json"
 echo ""
 
 echo "Starting server for user: $USERNAME"
 curl -X POST $DOMAIN/hub/api/users/$USERNAME/server \
-     -H "Authorization: token $TOKEN" \
-     -H "Content-Type: application/json" \
-     -d "{ \"conversationId\": \"$CONVERSATION_ID\" }"
+  -H "Authorization: token $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{ \"conversationId\": \"$CONVERSATION_ID\" }"
 echo ""
 
 echo "Timing the progress of the server for user: $USERNAME"
@@ -41,7 +41,7 @@ if [ -n "$CONNECT" ]; then
   kubectl exec -it "jupyter-$USERNAME" -- id
 
   echo "Listing data mount..."
-  kubectl exec -it "jupyter-$USERNAME" -- ls -al /home/jovyan
+  kubectl exec -it "jupyter-$USERNAME" -- ls -al /mnt/data
 
   echo "Connecting to $USERNAME's server..."
   kubectl exec -it "jupyter-$USERNAME" -- /bin/bash

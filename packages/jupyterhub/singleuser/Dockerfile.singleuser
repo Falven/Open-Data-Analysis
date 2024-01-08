@@ -1,0 +1,42 @@
+FROM quay.io/jupyter/base-notebook:latest
+
+# Install packages to use for Code Interpretation
+COPY packages/jupyterhub/singleuser/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && rm requirements.txt
+
+# Switch to the root user
+# USER root
+
+# # Install FUSE
+# RUN apt-get update && \
+#   apt-get install -y fuse && \
+#   apt-get clean && \
+#   rm -rf /var/lib/apt/lists/*
+# # Create a directory for the FUSE project
+# RUN mkdir -p /opt/chatfuse
+# # Copy the FUSE project to /opt/chatfuse
+# COPY packages/chatfuse /opt/chatfuse
+# # Install any requirements for the FUSE project
+# RUN pip install --no-cache-dir -r /opt/chatfuse/requirements.txt
+# # Set the necessary root fs permissions for the FUSE project
+# RUN chown -R root:root /opt/chatfuse
+# RUN chmod -R 700 /opt/chatfuse
+
+# # Create a directory for Jupyter server extensions
+# RUN mkdir -p /usr/local/share/jupyter/extensions
+# # Copy and install the Jupyter server extension
+# COPY packages/chatextension /usr/local/share/jupyter/extensions/chatextension
+# # Install any dependencies for the Jupyter server extension
+# RUN pip install --no-cache-dir -r /usr/local/share/jupyter/extensions/chatextension/requirements.txt
+# # Install the Jupyter server extension
+# RUN pip install /usr/local/share/jupyter/extensions/chatextension
+# # Copy the Jupyter server configuration file
+# COPY packages/jupyterhub/singleuser/jupyter_server_config.py /etcs/jupyter/
+
+# Copy the start script
+# COPY packages/jupyterhub/singleuser/start-with-fuse.sh /usr/local/bin/start-with-fuse.sh
+# RUN chmod +x /usr/local/bin/start-with-fuse.sh
+
+# USER $NB_UID
+
+# CMD ["start-with-fuse.sh"]

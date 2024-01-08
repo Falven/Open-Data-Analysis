@@ -1,3 +1,0 @@
-FROM quay.io/jupyterhub/k8s-hub:3.2.1
-
-COPY dynamic_storage_kube_spawner.py /usr/local/lib/python3.11/site-packages/
