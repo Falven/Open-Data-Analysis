@@ -100,6 +100,7 @@ export type OnExitCb = () => void | Promise<void>;
 
 export enum Command {
   Exit = '.exit',
+  Save = '.save',
   SelectUser = '.user',
   SelectConversation = '.conversation',
   ConfirmHub = '.hub',
@@ -391,7 +392,8 @@ export class ConsoleChat {
       chalk.blue.bold('  .upload <file>: ') +
         chalk.blue('Upload a file to the current conversation'),
     );
-    console.log(chalk.blue.bold('  .exit: ') + chalk.blue('Save and exit'));
+    console.log(chalk.blue.bold('  .save: ') + chalk.blue('Save the conversation'));
+    console.log(chalk.blue.bold('  .exit: ') + chalk.blue('exit'));
   }
 
   private completer: AsyncCompleter = (
@@ -491,6 +493,10 @@ export class ConsoleChat {
 
           console.log('Exiting...');
           process.exit(0);
+        case Command.Save:
+          await this.save();
+          console.log('Conversation saved!');
+          break;
         case Command.Help:
           this.logCommands();
           break;

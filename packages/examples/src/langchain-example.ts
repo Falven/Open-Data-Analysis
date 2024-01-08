@@ -204,8 +204,6 @@ chat.handleUpload = async (
   };
 };
 
-chat.onExit = async (): Promise<void> => await chat.save();
-
 await chat.load();
 
 await chat.loop();
