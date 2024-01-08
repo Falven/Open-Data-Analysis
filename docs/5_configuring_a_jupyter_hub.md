@@ -320,9 +320,6 @@ Assistant: Here is a plot with translucent circles of varying colors.
 
 At this point, again, I recommend you refer to the annotated code in `src/hub_tool_example.ts`, `src/tools/HubCodeInterpreter.ts` and `src/utils/jupyterHubUtils.ts` to understand more of the details.
 
-[Previous: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md) | [Next: Conclusion](./6_conclusion.md)  
-[Table of Contents](../README.md#table-of-contents)
-
 ## 5.6 Managing user servers
 
 > [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idle-culler) provides a JupyterHub service to identify and stop idle or long-running Jupyter servers via JupyterHub. It works solely by interacting with JupyterHub's REST API, and is often configured to run as a JupyterHub managed service started up by JupyterHub itself.
@@ -345,3 +342,6 @@ You will be able to see messages like the following:
 # And eventually, when it culls a single-user server...
 [I 231213 03:52:36 __init__:362] Culling user fran (inactive for 1:09:58.216145)
 ```
+
+[Previous: Configuring a Jupyter Server](./4_configuring_a_jupyter_server.md) | [Next: Conclusion](./6_conclusion.md)  
+[Table of Contents](../README.md#table-of-contents)
