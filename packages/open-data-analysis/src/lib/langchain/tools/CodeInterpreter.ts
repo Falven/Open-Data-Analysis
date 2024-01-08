@@ -206,14 +206,19 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
       let notebookModel: Contents.IModel | undefined;
 
       if (this.persistExecutions === true) {
-        contentsManager = new ContentsManager({ serverSettings });
+        // This is not essential to the interpretation of the code.
+        try {
+          contentsManager = new ContentsManager({ serverSettings });
 
-        // Get or Create the notebook if it doesn't exist.
-        notebookModel = await getOrCreateNotebook(
-          contentsManager,
-          this.notebookName,
-          this.notebookPath,
-        );
+          // Get or Create the notebook if it doesn't exist.
+          notebookModel = await getOrCreateNotebook(
+            contentsManager,
+            this.notebookName,
+            this.notebookPath,
+          );
+        } catch (error) {
+          console.error(`Error getting or creating notebook: ${error}`);
+        }
       }
 
       // Get or create a Jupyter python kernel session.
@@ -244,18 +249,23 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
       );
 
       if (notebookModel !== undefined && contentsManager !== undefined) {
-        // Add the code and result to the notebook.
-        addCellsToNotebook(notebookModel, code, outputs, executionCount);
-        // Validate the notebook.
-        Contents.validateContentsModel(notebookModel);
-        // Save the notebook.
-        await contentsManager.save(this.notebookPath, notebookModel);
+        // This is not essential to the interpretation of the code.
+        try {
+          // Add the code and result to the notebook.
+          addCellsToNotebook(notebookModel, code, outputs, executionCount);
+          // Validate the notebook.
+          Contents.validateContentsModel(notebookModel);
+          // Save the notebook.
+          await contentsManager.save(this.notebookPath, notebookModel);
+        } catch (error) {
+          console.error(`Error saving notebook: ${error}`);
+        }
       }
 
       return JSON.stringify({ stdout, stderr });
     } catch (error) {
       console.error(error);
-      // Inform the Assistant that a tool invocation error has occurred.
+      // Inform the Assistant that a fatal tool invocation error has occurred.
       return "There was an error executing the user's code. Please try again later.";
     }
   }
