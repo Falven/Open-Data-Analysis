@@ -11,7 +11,7 @@ from kubespawner import KubeSpawner
 from kubespawner.objects import make_pvc
 
 
-class ChatSpawner(KubeSpawner):
+class DynamicSpawner(KubeSpawner):
     """
     Custom KubeSpawner class with dynamic storage provisioning for NFS mounts.
 
@@ -69,7 +69,7 @@ class ChatSpawner(KubeSpawner):
         return template
 
 
-async def modify_pod_hook(spawner: ChatSpawner, pod: V1Pod):
+async def modify_pod_hook(spawner: DynamicSpawner, pod: V1Pod):
     if (
         hasattr(spawner, "sc_names")
         and hasattr(spawner, "pvc_templates")
@@ -93,7 +93,7 @@ async def modify_pod_hook(spawner: ChatSpawner, pod: V1Pod):
 
 
 async def configure_additional_nfs_volume(
-    spawner: ChatSpawner,
+    spawner: DynamicSpawner,
     pod: V1Pod,
     sc_name: str,
     pvc_name: str,
