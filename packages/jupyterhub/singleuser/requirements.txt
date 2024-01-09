@@ -5,4 +5,5 @@ openpyxl
 PyPDF2==1.28.6
 scipy
 seaborn
-Faker
+faker
+scikit-learn

@@ -36,14 +36,7 @@ export const saveImage: DisplayCallback = async (
 ): Promise<string | undefined> => {
   const imageData = Buffer.from(base64ImageData, 'base64');
   const imageName = `${randomUUID()}.png`;
-  const imagePath = join(
-    dirname(fileURLToPath(import.meta.url)),
-    '..',
-    '..',
-    '..',
-    'images',
-    imageName,
-  );
+  const imagePath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'images', imageName);
   await writeFile(imagePath, imageData);
   return;
 };
