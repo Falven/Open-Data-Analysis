@@ -57,7 +57,15 @@ chat.onUserSettingsChange = (
   conversation: Conversation,
   useHub: boolean,
 ): void => {
-  memory = [...(conversation.messages as ChatCompletionMessageParam[])];
+  memory = [
+    ...conversation.messages.map(
+      ({ role, content }: Message) =>
+        ({
+          role,
+          content,
+        }) as ChatCompletionMessageParam,
+    ),
+  ];
   if (memory.length === 0) {
     memory.push({ role: 'system', content: 'You are a helpful assistant.' });
   }

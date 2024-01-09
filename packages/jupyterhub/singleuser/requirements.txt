@@ -2,7 +2,7 @@ numpy
 matplotlib
 pandas
 openpyxl
-PyPDF2
+PyPDF2==1.28.6
 scipy
 seaborn
-faker
+Faker
