@@ -3,5 +3,5 @@ dist/
 test_files/
 .env
 .DS_Store
-images/*
+**/images/*
 **/chat.json
