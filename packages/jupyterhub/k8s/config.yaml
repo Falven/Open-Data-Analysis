@@ -17,11 +17,22 @@ hub:
   extraConfig:
     # Custom spawner to create a dynamically generated PVCs for Azure Blob Storage data mounts.
     customSpawner: |
-      from chat_spawner import ChatSpawner
-      c.JupyterHub.spawner_class = ChatSpawner
-      c.Spawner.sc_names = ["azure-blob-nfs-sc"]
-      c.Spawner.pvc_templates = ["claim-nfs-{username}"]
-      c.Spawner.volume_names = ["data"]
+      from dynamic_spawner import DynamicSpawner
+      c.JupyterHub.spawner_class = DynamicSpawner
+      c.Spawner.additional_pvcs = [{
+        "metadata": {
+          "name": "claim-nfs-{username}",
+        },
+        "spec": {
+          "access_modes": ["ReadWriteOnce"],
+          "resources": {
+            "requests": {
+              "storage": "3Gi", # How much storage to request from the volume per user.
+            },
+          },
+          "storage_class_name": "azure-blob-nfs-sc",
+        },
+      }]
   services:
     # Configure the Admin API service.
     myapi:
