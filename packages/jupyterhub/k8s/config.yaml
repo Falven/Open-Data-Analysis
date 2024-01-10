@@ -37,7 +37,7 @@ hub:
     # Configure the Admin API service.
     myapi:
       name: 'myapi'
-      api_token: <token>
+      api_token: <token> # Generate an API token and enter here for authentication.
     # Configure a service to cull idle single-user servers after 1 hour of inactivity.
     jupyterhub-idle-culler-service:
       name: jupyterhub-idle-culler-service
