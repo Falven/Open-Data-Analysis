@@ -116,7 +116,6 @@ chat.generateAssistantResponse = async function* generateAssistantResponse(
   });
 
   let messageChunk: Message | undefined;
-  // Finish reason 'tool_calls'
   for await (const chunk of stream) {
     const token = chunk.choices[0]?.delta?.content;
 
