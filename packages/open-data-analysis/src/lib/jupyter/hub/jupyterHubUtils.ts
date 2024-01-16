@@ -74,11 +74,6 @@ export const startServerForUser = async (
   conversationId: string,
   options?: Options,
 ): Promise<ProgressEvent> => {
-  const firstServer = Object.values(user.servers)[0];
-  if (firstServer !== undefined && firstServer.ready) {
-    return progressFinishedEvent;
-  }
-
   const response = await fetchWithRetry(
     async (): Promise<Response> =>
       fetchInstance(`/users/${user.name}/server`, {

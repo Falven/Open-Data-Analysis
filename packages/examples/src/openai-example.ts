@@ -9,7 +9,7 @@ import { getEnvOrThrow } from 'open-data-analysis/utils';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
 import { readFile, saveImage } from './utils/files.js';
-import { onFileUploadProgress, onSingleUserServerProgress } from './utils/ascii.js';
+import { reportFileUploadProgress, reportSingleUserServerProgress } from './utils/ascii.js';
 import {
   ConsoleChat,
   Conversation,
@@ -74,17 +74,18 @@ chat.onUserSettingsChange = (
     userId: userName,
     conversationId: conversation.id,
     useHub,
-    onServerStartup: onSingleUserServerProgress(userName),
+    onWaitingForServerStartup: reportSingleUserServerProgress(userName),
     onDisplayData: saveImage,
   });
 
-  const { name, description, _call, schema } = interpreter;
+  const { name, description, schema } = interpreter;
+
   tools = [
     {
       type: 'function',
       function: {
         function: async (args: CodeInterpreterFunction): Promise<string> => {
-          const result = await _call.bind(interpreter)(args);
+          const result = await interpreter._call(args);
           const invocation = toToolInvocation(name, args, result);
           currentToolInvocations.push(invocation);
           return invocation.output;
@@ -96,6 +97,8 @@ chat.onUserSettingsChange = (
       },
     },
   ];
+
+  interpreter.init();
 };
 
 chat.generateAssistantResponse = async function* generateAssistantResponse(
@@ -169,7 +172,7 @@ chat.handleUpload = async (
     return;
   }
 
-  const content = await interpreter.uploadFile(...result, onFileUploadProgress);
+  const content = await interpreter.uploadFile(...result, reportFileUploadProgress);
 
   memory.push({ role: 'system', content });
   return {

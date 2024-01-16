@@ -11,7 +11,6 @@
 hub:
   # User our custom jupyterhub image with our custom spawner.
   image:
-    pullPolicy: Always
     name: <my-acr-name>.azurecr.io/k8s-hub
     tag: 3.2.1
   extraConfig:
@@ -73,7 +72,6 @@ imagePullSecrets:
   - name: <your-secret-name>
 singleuser:
   image:
-    pullPolicy: Always
     name: <my-acr-name>.azurecr.io/singleuser
     tag: latest
   memory:
@@ -93,7 +91,6 @@ singleuser:
     # Init container to set up the NFS mount permissions
     - name: init-nfs
       image: <my-acr-name>.azurecr.io/init-nfs:1.36.1
-      imagePullPolicy: Always
       securityContext:
         runAsUser: 0 # Run as root user
       volumeMounts:

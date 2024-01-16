@@ -4,13 +4,7 @@ import { Readable } from 'node:stream';
 import { StructuredTool } from 'langchain/tools';
 import { renderTextDescriptionAndArgs } from 'langchain/tools/render';
 import { z } from 'zod';
-import {
-  Contents,
-  ContentsManager,
-  KernelManager,
-  ServerConnection,
-  SessionManager,
-} from '@jupyterlab/services';
+import { Contents, ContentsManager, KernelManager, SessionManager } from '@jupyterlab/services';
 import {
   executeCode,
   getOrCreatePythonSession,
@@ -25,6 +19,8 @@ import {
   getOrCreateUser,
   streamServerProgress,
   startServerForUser,
+  JupyterHubUser,
+  JupyterServerDetails,
 } from 'open-data-analysis/jupyter/hub';
 import {
   getEnvOrThrow,
@@ -52,7 +48,7 @@ export type CodeInterpreterOptions = {
   /**
    * A callback invoked as a single-user server is starting up.
    */
-  onServerStartup?: ServerStartupCallback;
+  onWaitingForServerStartup?: ServerStartupCallback;
   /**
    * A callback invoked whenever an figure is generated.
    */
@@ -109,7 +105,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
   description: string;
   description_for_model: string;
   schema: CodeInterpreterFunctionSchemaType;
-  onServerStartup?: ServerStartupCallback;
+  onWaitingForServerStartup?: ServerStartupCallback;
   onDisplayData?: DisplayCallback;
 
   private userId: string;
@@ -120,6 +116,9 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
   private sandboxDirectory: string;
   private notebookName: string;
   private notebookPath: string;
+
+  private user: JupyterHubUser | undefined;
+  private server: JupyterServerDetails | undefined;
 
   /**
    * The LangChain name of the tool.
@@ -137,7 +136,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     userId,
     conversationId,
     useHub,
-    onServerStartup,
+    onWaitingForServerStartup,
     onDisplayData,
     instructions,
     persistExecutions = true,
@@ -150,7 +149,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     // GPT4 Advanced Data Analysis prompt
     this.description_for_model = this.description = codeInterpreterPromptTemplate(instructions);
     this.schema = CodeInterpreterFunctionSchema;
-    this.onServerStartup = onServerStartup;
+    this.onWaitingForServerStartup = onWaitingForServerStartup;
     this.onDisplayData = onDisplayData;
 
     this.userId = sanitizeUsername(userId);
@@ -174,27 +173,16 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     }
 
     try {
-      let serverSettings: ServerConnection.ISettings;
+      await this.init(this.onWaitingForServerStartup);
 
-      if (this.useHub) {
-        // Get or create the JupyterHub user if it does not exist.
-        const user = await getOrCreateUser(this.userId);
-
-        // Start the JupyterHub server for the user if it is not already running.
-        const serverStatus = await startServerForUser(user, this.conversationId);
-        if (serverStatus?.ready !== true) {
-          const progressEventStream = await streamServerProgress(user);
-          for await (const progressEvent of progressEventStream) {
-            this.onServerStartup?.(progressEvent);
-          }
-        }
-
-        // Create Jupyter Hub server settings.
-        serverSettings = createServerSettingsForUser(user);
-      } else {
-        // Create single user Jupyter server settings.
-        serverSettings = createServerSettings();
+      if (this.user === undefined) {
+        throw new Error('User is undefined.');
       }
+
+      // Create server settings.
+      const serverSettings = this.useHub
+        ? createServerSettingsForUser(this.user)
+        : createServerSettings();
 
       // Create managers to interact with the Jupyter server.
       const sessionManager = new SessionManager({
@@ -270,6 +258,35 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
     }
   }
 
+  async init(onServerStartup?: ServerStartupCallback): Promise<void> {
+    if (this.useHub) {
+      // Get or create the JupyterHub user if it does not exist.
+      this.user = await getOrCreateUser(this.userId);
+
+      // Set the JupyterHub server for the user, if any.
+      this.server = Object.values(this.user.servers)[0];
+
+      // If the server does not exist, start it.
+      if (this.server === undefined) {
+        const serverStatus = await startServerForUser(this.user, this.conversationId);
+
+        // If the server is not ready, stream the server startup progress.
+        if (serverStatus?.ready !== true) {
+          const progressEventStream = await streamServerProgress(this.user);
+          for await (const progressEvent of progressEventStream) {
+            onServerStartup?.(progressEvent);
+          }
+        }
+      } else {
+        const serverConversationId = this.server.user_options.conversationId;
+        // Update the conversation ID to match that of the server.
+        if (this.conversationId !== serverConversationId) {
+          this.conversationId = serverConversationId;
+        }
+      }
+    }
+  }
+
   /**
    * Upload a file to the user's conversation blob.
    * @param path The path to the file to upload.
@@ -289,7 +306,7 @@ export class CodeInterpreter extends StructuredTool<CodeInterpreterFunctionSchem
         fileSizeBytes,
         onProgress,
       );
-      return `User uploaded file ${name} to: ${mountPath}/${name}.`;
+      return `User uploaded file: ${mountPath}/${name}.`;
     } catch (error) {
       console.error(error);
       return `There was an error uploading the file ${name}.`;

@@ -23,7 +23,7 @@ import { CodeInterpreter } from 'open-data-analysis/langchain/tools';
 import { MarkdownLinkProcessor } from 'open-data-analysis/langchain/TokenProcessor';
 
 import { ConsoleChat, Conversation, Message, MessageRole } from './utils/console-chat.js';
-import { onFileUploadProgress, onSingleUserServerProgress } from './utils/ascii.js';
+import { reportFileUploadProgress, reportSingleUserServerProgress } from './utils/ascii.js';
 import { readFile, saveImage } from './utils/files.js';
 import { toToolInvocation } from './utils/codeInterpreterUtils.js';
 
@@ -87,7 +87,7 @@ chat.onUserSettingsChange = (
     userId: userName,
     conversationId: conversation.id,
     useHub,
-    onServerStartup: onSingleUserServerProgress(userName),
+    onWaitingForServerStartup: reportSingleUserServerProgress(userName),
     onDisplayData: saveImage,
   });
 
@@ -194,7 +194,7 @@ chat.handleUpload = async (
     return;
   }
 
-  const content = await interpreter.uploadFile(...result, onFileUploadProgress);
+  const content = await interpreter.uploadFile(...result, reportFileUploadProgress);
 
   memory.chatHistory.addMessage(new SystemMessage(content));
   return {

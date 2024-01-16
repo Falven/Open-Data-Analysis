@@ -24,7 +24,7 @@ const getProgressBar = (current: number, total: number, barLength: number): stri
  * @param userName The name of the user.
  * @returns A callback invoked as a single-user server is starting up.
  */
-export const onSingleUserServerProgress =
+export const reportSingleUserServerProgress =
   (userName: string): ServerStartupCallback =>
   (progressEvent: ProgressEvent) => {
     const { progress } = progressEvent;
@@ -43,7 +43,7 @@ export const onSingleUserServerProgress =
  * @param bytesTransferred The number of bytes that have been transferred.
  * @param totalBytes The total number of bytes to transfer.
  */
-export const onFileUploadProgress = (bytesTransferred: number, totalBytes: number): void => {
+export const reportFileUploadProgress = (bytesTransferred: number, totalBytes: number): void => {
   const barLength = 20;
   const displayBar = getProgressBar(bytesTransferred, totalBytes, barLength);
   const progressPercentage = Math.round((bytesTransferred / totalBytes) * 100);

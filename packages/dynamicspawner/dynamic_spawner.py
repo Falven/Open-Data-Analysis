@@ -162,6 +162,7 @@ async def make_additional_pvc(
                 spawner._expand_all(spawner.storage_extra_labels)
             ),
             **metadata.get("labels", {}),
+            "component": "singleuser-storage",
         }
 
         metadata["annotations"] = {
