@@ -171,6 +171,7 @@ chat.handleUpload = async (
   if (result === undefined) {
     return;
   }
+
   const [fileName, fileStream, fileSizeBytes] = result;
 
   const content = await interpreter.uploadFile(
@@ -181,6 +182,7 @@ chat.handleUpload = async (
   );
 
   memory.push({ role: 'system', content });
+
   return {
     id: randomUUID(),
     role: MessageRole.System,
