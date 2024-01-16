@@ -171,8 +171,14 @@ chat.handleUpload = async (
   if (result === undefined) {
     return;
   }
+  const [fileName, fileStream, fileSizeBytes] = result;
 
-  const content = await interpreter.uploadFile(...result, reportFileUploadProgress);
+  const content = await interpreter.uploadFile(
+    fileName,
+    fileStream,
+    fileSizeBytes,
+    reportFileUploadProgress(fileName),
+  );
 
   memory.push({ role: 'system', content });
   return {

@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { ServerStartupCallback } from 'open-data-analysis/jupyter/server';
 import { ProgressEvent } from 'open-data-analysis/jupyter/hub';
+import { UploadProgressCb } from 'open-data-analysis/utils';
 
 /**
  * Generates an ASCII progress bar.
@@ -43,14 +44,16 @@ export const reportSingleUserServerProgress =
  * @param bytesTransferred The number of bytes that have been transferred.
  * @param totalBytes The total number of bytes to transfer.
  */
-export const reportFileUploadProgress = (bytesTransferred: number, totalBytes: number): void => {
-  const barLength = 20;
-  const displayBar = getProgressBar(bytesTransferred, totalBytes, barLength);
-  const progressPercentage = Math.round((bytesTransferred / totalBytes) * 100);
+export const reportFileUploadProgress =
+  (fileName: string): UploadProgressCb =>
+  (bytesTransferred: number, totalBytes: number): void => {
+    const barLength = 20;
+    const displayBar = getProgressBar(bytesTransferred, totalBytes, barLength);
+    const progressPercentage = Math.round((bytesTransferred / totalBytes) * 100);
 
-  process.stdout.write(
-    `\rFile upload progress ${chalk.green(displayBar)} ${progressPercentage}%${
-      bytesTransferred === totalBytes ? '\n' : ''
-    }`,
-  );
-};
+    process.stdout.write(
+      `\rUploading ${fileName} ${chalk.green(displayBar)} ${progressPercentage}%${
+        bytesTransferred === totalBytes ? '\n' : ''
+      }`,
+    );
+  };
